@@ -1,0 +1,142 @@
+/* --- Thiết lập biến màu sắc (CSS Variables) --- */
+:root {
+    --primary-color: #6a11cb;
+    --secondary-color: #2575fc;
+    --text-color: #333;
+    --bg-color: #f4f4f4;
+    --error-bg: #f8d7da;
+    --error-text: #721c24;
+    --success-bg: #d4edda;
+    --success-text: #155724;
+    --white: #ffffff;
+}
+
+/* --- Reset CSS chuẩn HTML5 --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; /* Quan trọng để padding không làm vỡ khung */
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* Tạo nền Gradient chéo đẹp mắt */
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    height: 100vh; /* Chiều cao bằng 100% màn hình */
+    display: flex;
+    justify-content: center; /* Căn giữa ngang */
+    align-items: center;     /* Căn giữa dọc */
+}
+
+/* --- Khung chứa chính (Card UI) --- */
+.auth-container {
+    background-color: var(--white);
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2); /* Đổ bóng 3D */
+    width: 100%;
+    max-width: 400px; /* Không bao giờ rộng quá 400px */
+    transition: transform 0.3s ease;
+}
+
+.auth-container:hover {
+    transform: translateY(-5px); /* Hiệu ứng bay lên nhẹ khi di chuột vào khung */
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.auth-header h2 {
+    color: var(--text-color);
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+/* --- Các ô nhập liệu (Form Groups) --- */
+.form-group {
+    margin-bottom: 20px;
+    position: relative;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #666;
+    font-weight: 500;
+}
+
+.form-control {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e1e1e1;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    outline: none;
+}
+
+/* Hiệu ứng khi bấm vào ô input */
+.form-control:focus {
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(37, 117, 252, 0.1);
+}
+
+/* --- Nút bấm (Button) --- */
+.btn-submit {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+    color: var(--white);
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.3s ease, box-shadow 0.3s ease;
+}
+
+.btn-submit:hover {
+    opacity: 0.9;
+    box-shadow: 0 5px 15px rgba(106, 17, 203, 0.4);
+}
+
+/* --- Thông báo lỗi/thành công --- */
+.alert {
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.alert-error {
+    background-color: var(--error-bg);
+    color: var(--error-text);
+    border: 1px solid #f5c6cb;
+}
+
+.alert-success {
+    background-color: var(--success-bg);
+    color: var(--success-text);
+    border: 1px solid #c3e6cb;
+}
+
+/* --- Link chuyển trang --- */
+.auth-footer {
+    text-align: center;
+    margin-top: 25px;
+    font-size: 0.95rem;
+    color: #666;
+}
+
+.auth-footer a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
