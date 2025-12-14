@@ -1,16 +1,16 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Đăng Nhập | Todo App</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Sign In | Todo App</title>
         <link rel="stylesheet" href="css/style.css">
     </head>
     <body>
         
         <main class="auth-container">
             <header class="auth-header">
-                <h2>Đăng Nhập</h2>
+                <h2>Sign In</h2>
             </header>
 
             <% 
@@ -24,22 +24,22 @@
 
             <form action="login" method="POST">
                 <div class="form-group">
-                    <label for="email">Địa chỉ Email</label>
+                    <label for="email">Email Address</label>
                     <input type="email" id="email" name="email" class="form-control" 
-                           placeholder="Ví dụ: admin@gmail.com" required autofocus>
+                           placeholder="e.g. admin@gmail.com" required autofocus>
                 </div>
 
                 <div class="form-group">
-                    <label for="password">Mật khẩu</label>
+                    <label for="password">Password</label>
                     <input type="password" id="password" name="password" class="form-control" 
-                           placeholder="Nhập mật khẩu của bạn" required>
+                           placeholder="Enter your password" required>
                 </div>
 
-                <button type="submit" class="btn-submit">Đăng Nhập Ngay</button>
+                <button type="submit" class="btn-submit">Sign In</button>
             </form>
 
             <footer class="auth-footer">
-                Chưa có tài khoản? <a href="register">Đăng ký tại đây</a>
+                Don't have an account? <a href="register">Sign up here</a>
             </footer>
         </main>
 

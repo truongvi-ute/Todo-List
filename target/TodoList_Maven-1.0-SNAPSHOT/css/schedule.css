@@ -1,0 +1,413 @@
+/* --- SCHEDULE PAGE CSS --- */
+:root {
+    --primary-color: #4e54c8;
+    --bg-light: #f4f7f6;
+    --white: #ffffff;
+    --text-dark: #333333;
+    --text-grey: #666666;
+    --border-color: #e0e0e0;
+    --event-color: #667eea;
+    --event-bg: rgba(102, 126, 234, 0.15);
+}
+
+body {
+    background-color: var(--bg-light);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.main-container {
+    max-width: 100%;
+    margin: 20px;
+    padding: 0 10px;
+}
+
+/* --- DASHBOARD CONTROLS: 2 PANEL TRÊN --- */
+.dashboard-controls {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.exception-panel, .add-schedule-panel {
+    background: var(--white);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.exception-panel h3, .add-schedule-panel h3 {
+    margin-top: 0;
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+/* --- FORM STYLING --- */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: var(--text-dark);
+    font-size: 0.9rem;
+}
+
+.form-input {
+    width: 100%;
+    height: 40px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(78, 84, 200, 0.1);
+}
+
+.form-textarea {
+    width: 100%;
+    height: 70px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-family: inherit;
+    resize: vertical;
+}
+
+/* Form Row - nhiều input trên 1 hàng */
+.form-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.form-row .form-group {
+    margin-bottom: 0;
+}
+
+.flex-1 { flex: 1; }
+.flex-2 { flex: 2; }
+
+/* Time inputs */
+.time-inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.time-inputs .form-input {
+    flex: 1;
+}
+
+.time-inputs span {
+    color: var(--text-grey);
+}
+
+/* Radio & Checkbox Groups */
+.radio-group, .checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding: 10px 0;
+}
+
+.radio-group-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 0;
+}
+
+.radio-label, .checkbox-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-dark);
+}
+
+.radio-label input, .checkbox-label input {
+    margin-right: 6px;
+    accent-color: var(--primary-color);
+}
+
+.checkbox-group {
+    gap: 10px;
+}
+
+.checkbox-label {
+    background: var(--bg-light);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.checkbox-label:has(input:checked) {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* Button Group */
+.button-group {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.btn-submit {
+    min-width: 80px;
+    height: 40px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.btn-submit:hover {
+    background: #3a3f99;
+}
+
+.btn-delete {
+    min-width: 80px;
+    height: 40px;
+    background: #d63031;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.btn-delete:hover {
+    background: #c0392b;
+}
+
+/* --- WEEK NAVIGATION --- */
+.week-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--white);
+    padding: 15px 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.nav-btn {
+    background: white;
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text-dark);
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.nav-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.current-week {
+    font-weight: bold;
+    color: var(--text-dark);
+    font-size: 1.1rem;
+}
+
+/* --- SCHEDULE GRID --- */
+.schedule-grid {
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr);
+    gap: 0;
+    background: var(--white);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Cột thời gian bên trái */
+.time-column {
+    background: #f8f9fa;
+    border-right: 1px solid var(--border-color);
+}
+
+.time-header {
+    height: 60px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.time-slot {
+    height: 50px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    border-bottom: 1px solid #eee;
+    padding-top: 2px;
+}
+
+.time-label {
+    font-size: 0.75rem;
+    color: var(--text-grey);
+    font-weight: 500;
+}
+
+/* Cột ngày */
+.day-column {
+    border-right: 1px solid var(--border-color);
+    position: relative;
+}
+
+.day-column:last-child {
+    border-right: none;
+}
+
+.day-header {
+    height: 60px;
+    background: var(--primary-color);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.day-header.today {
+    background: #00b894;
+}
+
+.day-name {
+    font-weight: bold;
+    font-size: 0.95rem;
+}
+
+.day-header .date {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    margin-top: 2px;
+}
+
+/* Day slots container */
+.day-slots {
+    position: relative;
+    height: calc(18 * 50px); /* 18 giờ x 50px */
+}
+
+.hour-slot {
+    height: 50px;
+    border-bottom: 1px solid #eee;
+    box-sizing: border-box;
+}
+
+.hour-slot:hover {
+    background: rgba(78, 84, 200, 0.05);
+}
+
+/* --- EVENT CARD --- */
+.event-card {
+    position: absolute;
+    left: 4px;
+    right: 4px;
+    background: #f5f0e6;
+    border: 2px solid #3498db;
+    border-radius: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    overflow: hidden;
+    transition: all 0.2s;
+    z-index: 10;
+}
+
+.event-card:hover {
+    background: #ebe5d9;
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+    transform: scale(1.02);
+}
+
+.event-title {
+    display: block;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #2980b9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.event-desc {
+    display: block;
+    font-size: 0.95rem;
+    color: #333333;
+    margin-top: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Event colors by type (có thể mở rộng) */
+.event-card.recurring {
+    border-left-color: #00b894;
+    background: rgba(0, 184, 148, 0.15);
+}
+
+.event-card.recurring .event-title {
+    color: #00b894;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 1200px) {
+    .schedule-grid {
+        grid-template-columns: 50px repeat(7, 1fr);
+    }
+    
+    .time-label {
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 1024px) {
+    .dashboard-controls {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 800px) {
+    .schedule-grid {
+        grid-template-columns: 40px repeat(7, 1fr);
+    }
+    
+    .day-name {
+        font-size: 0.8rem;
+    }
+    
+    .day-header .date {
+        font-size: 0.7rem;
+    }
+    
+    .event-title {
+        font-size: 0.7rem;
+    }
+    
+    .event-time {
+        display: none;
+    }
+}

@@ -266,10 +266,10 @@ public class DeadlineServlet extends HttpServlet {
         }
     }
 
-    // Tạo danh sách 7 ngày trong tuần
+    // Build list of 7 days in week
     private List<DayInfo> buildWeekDays(LocalDate monday) {
         List<DayInfo> days = new ArrayList<>();
-        String[] dayNames = {"Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN"};
+        String[] dayNames = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM");
         
         for (int i = 0; i < 7; i++) {

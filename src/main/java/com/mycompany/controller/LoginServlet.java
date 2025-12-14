@@ -27,7 +27,7 @@ public class LoginServlet extends HttpServlet {
             HttpSession session = request.getSession();
             session.setAttribute("loginedUser", user);
             session.setMaxInactiveInterval(30 * 60);
-            url = "/home.jsp"; 
+            url = "/dashboard"; 
             response.sendRedirect(request.getContextPath() + url);
             return; // Quan trọng: Dùng sendRedirect thì phải return để kết thúc hàm
         } else {

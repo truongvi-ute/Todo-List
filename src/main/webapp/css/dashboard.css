@@ -1,0 +1,319 @@
+/* --- DASHBOARD CSS --- */
+:root {
+    --primary-color: #4e54c8;
+    --bg-light: #f4f7f6;
+    --white: #ffffff;
+    --text-dark: #333333;
+    --text-grey: #666666;
+    --border-color: #e0e0e0;
+    --success-color: #00b894;
+    --danger-color: #d63031;
+}
+
+.main-container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 20px;
+}
+
+.welcome-section {
+    margin-bottom: 30px;
+}
+
+.welcome-section h1 {
+    color: var(--text-dark);
+    margin-bottom: 5px;
+}
+
+.welcome-section p {
+    color: var(--text-grey);
+}
+
+/* --- DASHBOARD LAYOUT --- */
+.dashboard-content {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 20px;
+}
+
+/* --- BÊN TRÁI: Day Info Panel --- */
+.day-info-panel {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.day-info-panel h3 {
+    color: var(--primary-color);
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.section-block {
+    margin-bottom: 25px;
+}
+
+.section-block:last-child {
+    margin-bottom: 0;
+}
+
+.section-block h4 {
+    color: var(--text-dark);
+    margin: 0 0 15px 0;
+    font-size: 1.1rem;
+}
+
+.empty-message {
+    color: var(--text-grey);
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+    background: var(--bg-light);
+    border-radius: 6px;
+    font-size: 1rem;
+}
+
+/* --- Task List (Deadline) --- */
+.task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.task-item {
+    background: var(--bg-light);
+    padding: 14px 16px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.task-item:hover {
+    background: #eef0ef;
+}
+
+.task-item.DONE {
+    opacity: 0.7;
+}
+
+.task-item.LATE {
+    background: #fff5f5;
+}
+
+.toggle-form {
+    margin: 0;
+    width: 100%;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    width: 100%;
+}
+
+/* Custom circular checkbox - kích thước rất lớn */
+.checkbox-container input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 36px;
+    height: 36px;
+    border: 3px solid #ccc;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.checkbox-container input[type="checkbox"]:checked {
+    background: var(--success-color);
+    border-color: var(--success-color);
+}
+
+.checkbox-container input[type="checkbox"]:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.checkbox-container input[type="checkbox"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.task-title {
+    font-size: 1.4rem;
+    color: var(--text-dark);
+    flex: 1;
+}
+
+.task-title.done {
+    text-decoration: line-through;
+    color: var(--text-grey);
+}
+
+/* Priority badge - canh phải, kích thước rất lớn */
+.day-info-panel .task-priority {
+    font-size: 1rem;
+    padding: 6px 14px;
+    border-radius: 5px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-left: auto !important;
+    flex-shrink: 0;
+}
+
+.day-info-panel .task-priority.HIGH {
+    background: #ffe6e6 !important;
+    color: #ff7675 !important;
+}
+
+.day-info-panel .task-priority.MEDIUM {
+    background: #fff8e6 !important;
+    color: #e17055 !important;
+}
+
+.day-info-panel .task-priority.LOW {
+    background: #e6fff9 !important;
+    color: #00b894 !important;
+}
+
+/* --- Event List (Schedule) --- */
+.event-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.event-item {
+    background: var(--bg-light);
+    padding: 16px 18px;
+    border-radius: 8px;
+    border-left: 4px solid #667eea;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.event-item .event-time {
+    font-size: 1.2rem;
+    color: #667eea;
+    font-weight: 600;
+    min-width: 130px;
+}
+
+.event-item .event-title {
+    font-size: 1.4rem;
+    color: var(--text-dark);
+}
+
+/* --- BÊN PHẢI: Calendar Panel --- */
+.calendar-panel {
+    background: var(--white);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    height: fit-content;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.calendar-header .nav-btn {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text-dark);
+    transition: all 0.2s;
+}
+
+.calendar-header .nav-btn:hover {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.month-title {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: var(--text-dark);
+}
+
+/* --- Calendar Grid --- */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+}
+
+.calendar-day-header {
+    text-align: center;
+    font-weight: bold;
+    font-size: 0.8rem;
+    color: var(--text-grey);
+    padding: 8px 0;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 0.9rem;
+    color: var(--text-dark);
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.calendar-day:hover {
+    background: var(--bg-light);
+}
+
+.calendar-day.other-month {
+    color: #ccc;
+}
+
+.calendar-day.today {
+    background: var(--success-color);
+    color: white;
+    font-weight: bold;
+}
+
+.calendar-day.selected {
+    background: var(--primary-color);
+    color: white;
+    font-weight: bold;
+}
+
+.calendar-day.today.selected {
+    background: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--success-color);
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 900px) {
+    .dashboard-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .calendar-panel {
+        order: -1; /* Calendar lên trên */
+    }
+}

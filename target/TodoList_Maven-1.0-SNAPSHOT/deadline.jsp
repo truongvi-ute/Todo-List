@@ -5,7 +5,7 @@
     <c:redirect url="/deadline"/>
 </c:if>
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,68 +24,68 @@
             <div class="filter-nav-panel">
                 <div class="week-navigation">
                     <a href="deadline?action=prevWeek" class="nav-btn">&lt;</a>
-                    <span>Tháng ${currentMonth}, ${currentYear}</span>
+                    <span>${currentMonth} / ${currentYear}</span>
                     <a href="deadline?action=nextWeek" class="nav-btn">&gt;</a>
                 </div>
 
                 <div class="filter-tools">
-                    <span style="font-weight: bold; color: #555;">Bộ lọc hiển thị:</span>
+                    <span style="font-weight: bold; color: #555;">Filter:</span>
                     <select class="form-input" onchange="window.location.href=this.value">
-                        <option value="deadline?filter=all" ${currentFilter == 'all' ? 'selected' : ''}>Tất cả</option>
-                        <option value="deadline?filter=in_progress" ${currentFilter == 'in_progress' ? 'selected' : ''}>Đang làm</option>
-                        <option value="deadline?filter=done" ${currentFilter == 'done' ? 'selected' : ''}>Đã xong</option>
-                        <option value="deadline?filter=late" ${currentFilter == 'late' ? 'selected' : ''}>Bị trễ</option>
+                        <option value="deadline?filter=all" ${currentFilter == 'all' ? 'selected' : ''}>All</option>
+                        <option value="deadline?filter=in_progress" ${currentFilter == 'in_progress' ? 'selected' : ''}>In Progress</option>
+                        <option value="deadline?filter=done" ${currentFilter == 'done' ? 'selected' : ''}>Done</option>
+                        <option value="deadline?filter=late" ${currentFilter == 'late' ? 'selected' : ''}>Late</option>
                     </select>
 
                     <select class="form-input" onchange="window.location.href=this.value">
-                        <option value="deadline?sort=date" ${currentSort == 'date' ? 'selected' : ''}>Sắp xếp: Tạo gần đây</option>
-                        <option value="deadline?sort=priority" ${currentSort == 'priority' ? 'selected' : ''}>Sắp xếp: Độ ưu tiên</option>
+                        <option value="deadline?sort=date" ${currentSort == 'date' ? 'selected' : ''}>Sort: Recent</option>
+                        <option value="deadline?sort=priority" ${currentSort == 'priority' ? 'selected' : ''}>Sort: Priority</option>
                     </select>
                 </div>
                 
                 <div style="margin-top: 10px; font-size: 0.85rem; color: #888; border-top: 1px solid #eee; padding-top: 10px;">
-                    <i>* Tick vào ô vuông để hoàn thành/hủy hoàn thành công việc.</i>
+                    <i>* Click checkbox to mark as done/undone.</i>
                 </div>
             </div>
 
             <div class="add-task-panel">
-                <h3 id="formTitle">Thêm Deadline Mới</h3>
+                <h3 id="formTitle">Add New Deadline</h3>
                 <form id="taskForm" action="deadline" method="post">
                     <input type="hidden" id="formAction" name="action" value="add">
                     <input type="hidden" id="editTaskId" name="taskId" value="">
                     
                     <div class="form-group">
-                        <input type="text" id="taskTitle" name="title" class="form-input" placeholder="Tên công việc..." required>
+                        <input type="text" id="taskTitle" name="title" class="form-input" placeholder="Task name..." required>
                     </div>
                     
                     <div class="form-group">
-                        <textarea id="taskDescription" name="description" class="form-textarea" placeholder="Mô tả chi tiết..."></textarea>
+                        <textarea id="taskDescription" name="description" class="form-textarea" placeholder="Description..."></textarea>
                     </div>
                     
                     <div style="display: flex; gap: 20px; align-items: flex-end;">
                         <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                            <label for="dueDate" style="font-size: 0.8rem; color: #666; margin-bottom: 5px; display:block;">Hạn chót:</label>
+                            <label for="dueDate" style="font-size: 0.8rem; color: #666; margin-bottom: 5px; display:block;">Due date:</label>
                             <input type="date" id="dueDate" name="dueDate" class="form-input" required min="${todayStr}">
                         </div>
                         
                         <div class="form-group" style="flex: 2; margin-bottom: 0;">
-                            <label style="font-size: 0.8rem; color: #666; margin-bottom: 8px; display:block;">Độ ưu tiên:</label>
+                            <label style="font-size: 0.8rem; color: #666; margin-bottom: 8px; display:block;">Priority:</label>
                             <div class="radio-group">
                                 <label class="radio-label">
-                                    <input type="radio" id="prioLow" name="priority" value="LOW" checked> Thấp
+                                    <input type="radio" id="prioLow" name="priority" value="LOW" checked> Low
                                 </label>
                                 <label class="radio-label">
-                                    <input type="radio" id="prioMedium" name="priority" value="MEDIUM"> TB
+                                    <input type="radio" id="prioMedium" name="priority" value="MEDIUM"> Medium
                                 </label>
                                 <label class="radio-label">
-                                    <input type="radio" id="prioHigh" name="priority" value="HIGH"> Cao
+                                    <input type="radio" id="prioHigh" name="priority" value="HIGH"> High
                                 </label>
                             </div>
                         </div>
                         
                         <div id="buttonGroup" class="button-group">
-                            <button type="button" id="btnDelete" class="btn-delete" onclick="deleteTask()">Xóa</button>
-                            <button type="submit" class="btn-submit">Lưu</button>
+                            <button type="button" id="btnDelete" class="btn-delete" onclick="deleteTask()">Delete</button>
+                            <button type="submit" class="btn-submit">Save</button>
                         </div>
                     </div>
                 </form>
@@ -116,7 +116,7 @@
                                         <c:set var="isPast" value="${day.date.isBefore(today)}" />
                                         <input type="checkbox" onchange="this.form.submit()" 
                                                style="cursor: ${isPast ? 'not-allowed' : 'pointer'}; margin-top: 4px; transform: scale(1.2); opacity: ${isPast ? '0.5' : '1'};"
-                                               title="${isPast ? 'Không thể thay đổi task quá khứ' : 'Đánh dấu hoàn thành/hủy'}"
+                                               title="${isPast ? 'Cannot change past task' : 'Mark as done/undone'}"
                                                ${task.status == 'DONE' ? 'checked' : ''}
                                                ${isPast ? 'disabled' : ''}>
                                     </form>
@@ -127,7 +127,7 @@
                                             <c:if test="${task.status != 'LATE'}">
                                                 <button type="button" class="btn-detail" 
                                                         onclick="showDetail('${task.id}', '${task.title}', '${task.description}', '${task.dueDate.toLocalDate()}', '${task.priority}')">
-                                                    Xem
+                                                    View
                                                 </button>
                                             </c:if>
                                             <c:if test="${task.status == 'LATE'}">
@@ -150,10 +150,10 @@
 <script>
     var isEditing = false;
     
-    // Hiển thị chi tiết task lên form để chỉnh sửa
+    // Show task detail in form for editing
     function showDetail(id, title, description, dueDate, priority) {
         isEditing = true;
-        document.getElementById('formTitle').textContent = '✏️ Chỉnh sửa Task';
+        document.getElementById('formTitle').textContent = 'Edit Task';
         document.getElementById('formAction').value = 'edit';
         document.getElementById('editTaskId').value = id;
         document.getElementById('taskTitle').value = title;
@@ -165,17 +165,17 @@
         document.getElementById('prioMedium').checked = (priority === 'MEDIUM');
         document.getElementById('prioHigh').checked = (priority === 'HIGH');
         
-        // Hiện nút Xóa
+        // Show delete button
         document.getElementById('btnDelete').style.display = 'block';
         
-        // Scroll lên form
+        // Scroll to form
         document.querySelector('.add-task-panel').scrollIntoView({ behavior: 'smooth' });
     }
     
-    // Hủy chỉnh sửa, reset form về trạng thái thêm mới
+    // Cancel edit, reset form to add mode
     function cancelEdit() {
         isEditing = false;
-        document.getElementById('formTitle').textContent = '+ Thêm Deadline Mới';
+        document.getElementById('formTitle').textContent = 'Add New Deadline';
         document.getElementById('formAction').value = 'add';
         document.getElementById('editTaskId').value = '';
         document.getElementById('taskTitle').value = '';
@@ -185,13 +185,13 @@
         document.getElementById('btnDelete').style.display = 'none';
     }
     
-    // Xóa task
+    // Delete task
     function deleteTask() {
         document.getElementById('formAction').value = 'delete';
         document.getElementById('taskForm').submit();
     }
     
-    // Click ra ngoài form sẽ tự động hủy edit
+    // Click outside form to cancel edit
     document.addEventListener('click', function(e) {
         if (!isEditing) return;
         

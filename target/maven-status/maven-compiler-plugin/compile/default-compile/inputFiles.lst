@@ -9,6 +9,7 @@ G:\Webs\TodoList_Maven\src\main\java\com\mycompany\model\FrequencyType.java
 G:\Webs\TodoList_Maven\src\main\java\com\mycompany\controller\LogoutServlet.java
 G:\Webs\TodoList_Maven\src\main\java\com\mycompany\data\DeadlineTaskDB.java
 G:\Webs\TodoList_Maven\src\main\java\com\mycompany\model\Priority.java
+G:\Webs\TodoList_Maven\src\main\java\com\mycompany\model\DayInfo.java
 G:\Webs\TodoList_Maven\src\main\java\com\mycompany\todolist_maven\JakartaRestConfiguration.java
 G:\Webs\TodoList_Maven\src\main\java\com\mycompany\model\DeadlineTask.java
 G:\Webs\TodoList_Maven\src\main\java\com\mycompany\model\ItemType.java
@@ -16,5 +17,8 @@ G:\Webs\TodoList_Maven\src\main\java\com\mycompany\model\ScheduleEvent.java
 G:\Webs\TodoList_Maven\src\main\java\com\mycompany\model\Status.java
 G:\Webs\TodoList_Maven\src\main\java\com\mycompany\controller\DeadlineServlet.java
 G:\Webs\TodoList_Maven\src\main\java\com\mycompany\model\User.java
+G:\Webs\TodoList_Maven\src\main\java\com\mycompany\controller\ScheduleServlet.java
+G:\Webs\TodoList_Maven\src\main\java\com\mycompany\data\ScheduleEventDB.java
 G:\Webs\TodoList_Maven\src\main\java\com\mycompany\controller\RegisterServlet.java
 G:\Webs\TodoList_Maven\src\main\java\com\mycompany\controller\LoginServlet.java
+G:\Webs\TodoList_Maven\src\main\java\com\mycompany\controller\DashboardServlet.java

@@ -1,12 +1,19 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
 <%@page import="java.time.LocalDate"%>
+<%@page import="java.time.DayOfWeek"%>
 <%@page import="java.time.format.DateTimeFormatter"%>
 
 <%
     // Xử lý lấy ngày tháng hiện tại (Java 8 Time API)
     LocalDate today = LocalDate.now();
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("'Ngày' dd 'tháng' MM 'năm' yyyy");
-    String formattedDate = today.format(formatter);
+    
+    // Get day of week
+    String[] dayNames = {"", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+    int dayOfWeek = today.getDayOfWeek().getValue(); // 1=Monday, 7=Sunday
+    String dayName = dayNames[dayOfWeek];
+    
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    String formattedDate = dayName + ", " + today.format(formatter);
 %>
 
 <style>
@@ -77,20 +84,20 @@
 <header class="main-header">
     <div class="header-left">
         <span class="current-date">
-            📅 <%= formattedDate %>
+            <%= formattedDate %>
         </span>
     </div>
 
     <div class="header-right">
         <nav>
             <ul class="nav-links">
-                <li><a href="home.jsp" class="${pageContext.request.requestURI.endsWith('home.jsp') ? 'active' : ''}">Dashboard</a></li>
+                <li><a href="dashboard" class="${pageContext.request.requestURI.endsWith('home.jsp') ? 'active' : ''}">Dashboard</a></li>
                 
                 <li><a href="deadline" class="${pageContext.request.requestURI.endsWith('deadline.jsp') ? 'active' : ''}">Deadline</a></li>
                 
-                <li><a href="schedule.jsp" class="${pageContext.request.requestURI.endsWith('schedule.jsp') ? 'active' : ''}">Schedule</a></li>
+                <li><a href="schedule" class="${pageContext.request.requestURI.endsWith('schedule.jsp') ? 'active' : ''}">Schedule</a></li>
                 
-                <li><a href="logout" class="btn-logout">Đăng xuất</a></li>
+                <li><a href="logout" class="btn-logout">Logout</a></li>
             </ul>
         </nav>
     </div>

@@ -159,4 +159,14 @@ public class DeadlineTaskDB {
             default: return 4;
         }
     }
+
+    // Lấy tasks của user theo ngày cụ thể, sắp xếp theo sort preference
+    public static List<DeadlineTask> getTasksByUserAndDate(User user, LocalDateTime startOfDay, 
+            LocalDateTime endOfDay, String sort) {
+        if ("priority".equals(sort)) {
+            return getTasksByUserDateRangeSortByPriority(user, startOfDay, endOfDay);
+        } else {
+            return getTasksByUserAndDateRange(user, startOfDay, endOfDay);
+        }
+    }
 }
