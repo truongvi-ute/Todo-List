@@ -43,4 +43,19 @@ public class UserDB {
     public static boolean emailExists(String email) {
         return selectUser(email) != null;
     }
+    
+    //Tìm user bằng Zalo ID
+    public static User selectUserByZaloId(String zaloId) {
+        EntityManager em = JPAUtil.getEntityManager();
+        String qString = "SELECT u FROM User u WHERE u.zaloId = :zaloId";
+        TypedQuery<User> q = em.createQuery(qString, User.class);
+        q.setParameter("zaloId", zaloId);
+        try {
+            return q.getSingleResult();
+        } catch (NoResultException e) {
+            return null;
+        } finally {
+            em.close();
+        }
+    }
 }

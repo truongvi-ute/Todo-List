@@ -5,6 +5,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Sign In | Todo App</title>
         <link rel="stylesheet" href="css/style.css">
+        <meta name="zalo-platform-site-verification" content="HisqSB779qPqjf5-jxyB8ME_q2EFoGH-D3Su" />
     </head>
     <body>
         
