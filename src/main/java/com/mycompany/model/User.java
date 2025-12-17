@@ -18,14 +18,12 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
     
-    @Column(name = "zalo_id", unique = true)
-    private String zaloId; // ID định danh của User đối với App của bạn
-
-    @Column(name = "zalo_name")
-    private String zaloName;
-
-    @Column(name = "zalo_avatar")
-    private String zaloAvatar;
+    // Notification settings
+    @Column(name = "notification_enabled")
+    private Boolean notificationEnabled = false;
+    
+    @Column(name = "notification_hour")
+    private Integer notificationHour = 6; // Default 6 AM
 
     // --- QUAN HỆ VỚI DEADLINE TASK ---
     // mappedBy = "user": Nghĩa là biến 'user' bên class DeadlineTask nắm giữ khóa ngoại
@@ -111,12 +109,19 @@ public class User {
         this.events = events;
     }
     
-    public String getZaloId() { return zaloId; }
-    public void setZaloId(String zaloId) { this.zaloId = zaloId; }
-
-    public String getZaloName() { return zaloName; }
-    public void setZaloName(String zaloName) { this.zaloName = zaloName; }
+    public Boolean getNotificationEnabled() {
+        return notificationEnabled != null ? notificationEnabled : false;
+    }
     
-    public String getZaloAvatar() { return zaloAvatar; }
-    public void setZaloAvatar(String zaloAvatar) { this.zaloAvatar = zaloAvatar; }
+    public void setNotificationEnabled(Boolean notificationEnabled) {
+        this.notificationEnabled = notificationEnabled;
+    }
+    
+    public Integer getNotificationHour() {
+        return notificationHour != null ? notificationHour : 6;
+    }
+    
+    public void setNotificationHour(Integer notificationHour) {
+        this.notificationHour = notificationHour;
+    }
 }

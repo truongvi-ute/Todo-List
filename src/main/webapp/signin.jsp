@@ -3,9 +3,10 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Sign In | Todo App</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>TodoList</title>
         <link rel="stylesheet" href="css/style.css">
-        <meta name="zalo-platform-site-verification" content="HisqSB779qPqjf5-jxyB8ME_q2EFoGH-D3Su" />
+
     </head>
     <body>
         
@@ -39,14 +40,9 @@
                 <button type="submit" class="btn-submit">Sign In</button>
             </form>
 
-            <div class="divider">
-                <span>hoặc</span>
+            <div class="forgot-password">
+                <a href="forgot-password">Forgot password?</a>
             </div>
-
-            <a href="zalo-login" class="btn-zalo">
-                <img src="https://page.widget.zalo.me/static/images/2.0/Logo.svg" alt="Zalo" class="zalo-icon">
-                <span>Đăng nhập bằng Zalo</span>
-            </a>
 
             <footer class="auth-footer">
                 Don't have an account? <a href="register">Sign up here</a>

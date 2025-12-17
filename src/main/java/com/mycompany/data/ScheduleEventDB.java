@@ -209,4 +209,32 @@ public class ScheduleEventDB {
             em.close();
         }
     }
+    
+    // Kiểm tra xem có event nào trùng giờ không (không tính event đang edit)
+    public static boolean hasOverlappingEvent(User user, LocalDateTime startTime, LocalDateTime endTime, Long excludeEventId) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            // Kiểm tra overlap: event mới bắt đầu trước khi event cũ kết thúc VÀ event mới kết thúc sau khi event cũ bắt đầu
+            String jpql = "SELECT COUNT(e) FROM ScheduleEvent e WHERE e.user = :user " +
+                          "AND e.startTime < :endTime AND e.endTime > :startTime " +
+                          "AND e.recurrenceRule IS NULL";
+            
+            if (excludeEventId != null) {
+                jpql += " AND e.id != :excludeId";
+            }
+            
+            TypedQuery<Long> query = em.createQuery(jpql, Long.class);
+            query.setParameter("user", user);
+            query.setParameter("startTime", startTime);
+            query.setParameter("endTime", endTime);
+            
+            if (excludeEventId != null) {
+                query.setParameter("excludeId", excludeEventId);
+            }
+            
+            return query.getSingleResult() > 0;
+        } finally {
+            em.close();
+        }
+    }
 }

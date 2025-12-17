@@ -44,7 +44,7 @@ public class AuthFilter implements Filter {
         } else {
             // Nếu chưa đăng nhập mà cố vào trang nội bộ -> Đá về Login
             // Dùng contextPath để đảm bảo đường dẫn đúng: /TenProject/signin.jsp
-            httpResponse.sendRedirect(httpRequest.getContextPath() + "/signin.jsp");
+            httpResponse.sendRedirect(httpRequest.getContextPath() + "/login");
         }
     }
 }

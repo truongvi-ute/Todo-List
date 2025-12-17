@@ -20,8 +20,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    /* Tạo nền Gradient chéo đẹp mắt */
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background: #151aa3;
     height: 100vh; /* Chiều cao bằng 100% màn hình */
     display: flex;
     justify-content: center; /* Căn giữa ngang */
@@ -141,60 +140,33 @@ body {
     text-decoration: underline;
 }
 
-
-/* --- Divider --- */
-.divider {
-    display: flex;
-    align-items: center;
+/* --- OTP & Forgot Password --- */
+.otp-info {
     text-align: center;
-    margin: 25px 0;
-    color: #999;
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 0.95rem;
 }
 
-.divider::before,
-.divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1px solid #e1e1e1;
+.otp-input {
+    text-align: center;
+    font-size: 1.5rem;
+    letter-spacing: 8px;
+    font-weight: 600;
 }
 
-.divider span {
-    padding: 0 15px;
+.forgot-password {
+    text-align: center;
+    margin-top: 15px;
+}
+
+.forgot-password a {
+    color: #666;
+    text-decoration: none;
     font-size: 0.9rem;
 }
 
-/* --- Nút Zalo Login --- */
-.btn-zalo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    width: 100%;
-    padding: 12px 20px;
-    background-color: #0068FF;
-    color: #ffffff;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
-}
-
-.btn-zalo:hover {
-    background-color: #0055d4;
-    box-shadow: 0 5px 15px rgba(0, 104, 255, 0.4);
-    color: #ffffff;
-}
-
-.btn-zalo .zalo-icon {
-    width: 28px;
-    height: 28px;
-    border-radius: 4px;
-    flex-shrink: 0;
-}
-
-.btn-zalo span {
-    line-height: 28px;
+.forgot-password a:hover {
+    color: var(--primary-color);
+    text-decoration: underline;
 }

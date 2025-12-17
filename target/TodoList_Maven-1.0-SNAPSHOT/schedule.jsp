@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schedule | Todo List</title>
+    <title>TodoList</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/home.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/schedule.css">
 </head>
@@ -92,12 +92,12 @@
                     <!-- Row 2: Start time, End time, Repeat -->
                     <div class="form-row">
                         <div class="form-group flex-1">
-                            <label>Start Time</label>
-                            <input type="time" name="startTime" id="startTime" class="form-input" required>
+                            <label>Start Time (06:00 - 23:00)</label>
+                            <input type="time" name="startTime" id="startTime" class="form-input" min="06:00" max="23:00" required>
                         </div>
                         <div class="form-group flex-1">
-                            <label>End Time</label>
-                            <input type="time" name="endTime" id="endTime" class="form-input" required>
+                            <label>End Time (06:00 - 23:59)</label>
+                            <input type="time" name="endTime" id="endTime" class="form-input" min="06:00" max="23:59" required>
                         </div>
                         <div class="form-group flex-1">
                             <label>Repeat</label>
@@ -105,7 +105,6 @@
                                 <option value="NONE">No repeat</option>
                                 <option value="DAILY">Daily</option>
                                 <option value="WEEKLY">Weekly</option>
-                                <option value="MONTHLY">Monthly</option>
                             </select>
                         </div>
                     </div>
@@ -141,6 +140,11 @@
                         <label>Description</label>
                         <textarea name="description" id="eventDescription" class="form-textarea" placeholder="Notes..."></textarea>
                     </div>
+                    
+                    <!-- Error Message -->
+                    <c:if test="${not empty param.error}">
+                        <div class="error-message" style="color: red; margin-bottom: 10px;">${param.error}</div>
+                    </c:if>
                     
                     <div class="button-group">
                         <button type="button" class="btn-delete" id="btnDelete" style="display: none;">Delete</button>

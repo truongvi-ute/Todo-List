@@ -44,16 +44,57 @@ public class UserDB {
         return selectUser(email) != null;
     }
     
-    //Tìm user bằng Zalo ID
-    public static User selectUserByZaloId(String zaloId) {
+    // Cập nhật mật khẩu
+    public static void updatePassword(String email, String newPassword) {
         EntityManager em = JPAUtil.getEntityManager();
-        String qString = "SELECT u FROM User u WHERE u.zaloId = :zaloId";
-        TypedQuery<User> q = em.createQuery(qString, User.class);
-        q.setParameter("zaloId", zaloId);
         try {
-            return q.getSingleResult();
-        } catch (NoResultException e) {
-            return null;
+            em.getTransaction().begin();
+            User user = selectUser(email);
+            if (user != null) {
+                user = em.merge(user);
+                user.setPassword(newPassword);
+            }
+            em.getTransaction().commit();
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            e.printStackTrace();
+        } finally {
+            em.close();
+        }
+    }
+    
+    // Cập nhật notification settings
+    public static void updateNotificationSettings(String email, boolean enabled, int hour) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            em.getTransaction().begin();
+            User user = selectUser(email);
+            if (user != null) {
+                user = em.merge(user);
+                user.setNotificationEnabled(enabled);
+                user.setNotificationHour(hour);
+            }
+            em.getTransaction().commit();
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            e.printStackTrace();
+        } finally {
+            em.close();
+        }
+    }
+    
+    // Lấy tất cả users có bật notification theo giờ
+    public static java.util.List<User> getUsersWithNotificationAt(int hour) {
+        EntityManager em = JPAUtil.getEntityManager();
+        String qString = "SELECT u FROM User u WHERE u.notificationEnabled = true AND u.notificationHour = :hour";
+        TypedQuery<User> q = em.createQuery(qString, User.class);
+        q.setParameter("hour", hour);
+        try {
+            return q.getResultList();
         } finally {
             em.close();
         }

@@ -21,6 +21,20 @@ body {
     padding: 0 10px;
 }
 
+/* Alert messages */
+.alert {
+    padding: 12px 20px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.alert-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
 /* --- DASHBOARD CONTROLS: 2 PANEL TRÊN --- */
 .dashboard-controls {
     display: grid;
@@ -163,6 +177,15 @@ body {
     justify-content: flex-end;
     gap: 10px;
     margin-top: 15px;
+}
+
+.add-schedule-panel .button-group {
+    justify-content: flex-end !important;
+}
+
+.add-schedule-panel .button-group .btn-submit,
+.add-schedule-panel .button-group .btn-delete {
+    width: auto !important;
 }
 
 .btn-submit {

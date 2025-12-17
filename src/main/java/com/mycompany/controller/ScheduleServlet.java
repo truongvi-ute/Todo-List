@@ -125,12 +125,18 @@ public class ScheduleServlet extends HttpServlet {
         User user = (User) session.getAttribute("loginedUser");
         String action = request.getParameter("action");
         
+        String errorMessage = null;
+        
         switch (action) {
             case "add":
-                handleAddEvent(request, user);
+                if (!handleAddEvent(request, user)) {
+                    errorMessage = (String) request.getAttribute("errorMessage");
+                }
                 break;
             case "edit":
-                handleEditEvent(request, user);
+                if (!handleEditEvent(request, user)) {
+                    errorMessage = (String) request.getAttribute("errorMessage");
+                }
                 break;
             case "delete":
                 handleDeleteEvent(request, user);
@@ -142,8 +148,12 @@ public class ScheduleServlet extends HttpServlet {
                 break;
         }
         
-        // Redirect về GET
-        response.sendRedirect(request.getContextPath() + "/schedule");
+        // Redirect về GET với error message nếu có
+        if (errorMessage != null) {
+            response.sendRedirect(request.getContextPath() + "/schedule?error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8"));
+        } else {
+            response.sendRedirect(request.getContextPath() + "/schedule");
+        }
     }
 
     // Build list of 7 days in week
@@ -166,7 +176,7 @@ public class ScheduleServlet extends HttpServlet {
     }
 
     // Xử lý thêm event mới
-    private void handleAddEvent(HttpServletRequest request, User user) {
+    private boolean handleAddEvent(HttpServletRequest request, User user) {
         String title = request.getParameter("title");
         String eventDateStr = request.getParameter("eventDate");
         String startTimeStr = request.getParameter("startTime");
@@ -176,7 +186,7 @@ public class ScheduleServlet extends HttpServlet {
         
         if (title == null || title.trim().isEmpty() || eventDateStr == null || eventDateStr.isEmpty() ||
             startTimeStr == null || endTimeStr == null) {
-            return;
+            return false;
         }
         
         try {
@@ -186,11 +196,29 @@ public class ScheduleServlet extends HttpServlet {
             
             // Validate năm hợp lệ (1900-2100)
             if (eventDate.getYear() < 1900 || eventDate.getYear() > 2100) {
-                return;
+                return false;
+            }
+            
+            // Validate thời gian trong khoảng 6h-23h
+            if (startTime.getHour() < 6 || startTime.getHour() > 23) {
+                request.setAttribute("errorMessage", "Start time must be between 06:00 and 23:00!");
+                return false;
+            }
+            if (endTime.getHour() < 6 || (endTime.getHour() == 0 && endTime.getMinute() == 0)) {
+                request.setAttribute("errorMessage", "End time must be between 06:00 and 23:59!");
+                return false;
             }
             
             LocalDateTime startDateTime = eventDate.atTime(startTime);
             LocalDateTime endDateTime = eventDate.atTime(endTime);
+            
+            // Kiểm tra trùng giờ (chỉ cho event không lặp)
+            if (frequencyStr == null || "NONE".equals(frequencyStr)) {
+                if (ScheduleEventDB.hasOverlappingEvent(user, startDateTime, endDateTime, null)) {
+                    request.setAttribute("errorMessage", "Time slot already occupied by another event!");
+                    return false;
+                }
+            }
             
             ScheduleEvent event = new ScheduleEvent(title.trim(), description, startDateTime, endDateTime, user);
             
@@ -202,7 +230,7 @@ public class ScheduleServlet extends HttpServlet {
                 if (untilDateStr != null && !untilDateStr.isEmpty()) {
                     untilDate = LocalDate.parse(untilDateStr);
                     if (untilDate.getYear() < 1900 || untilDate.getYear() > 2100) {
-                        return;
+                        return false;
                     }
                 }
                 
@@ -223,21 +251,22 @@ public class ScheduleServlet extends HttpServlet {
             }
             
             ScheduleEventDB.insert(event);
+            return true;
         } catch (Exception e) {
-            // Bỏ qua nếu parse lỗi hoặc dữ liệu không hợp lệ
             System.out.println("handleAddEvent error: " + e.getMessage());
+            return false;
         }
     }
 
     // Xử lý sửa event
-    private void handleEditEvent(HttpServletRequest request, User user) {
+    private boolean handleEditEvent(HttpServletRequest request, User user) {
         String eventIdStr = request.getParameter("eventId");
-        if (eventIdStr == null || eventIdStr.isEmpty()) return;
+        if (eventIdStr == null || eventIdStr.isEmpty()) return false;
         
         Long eventId = Long.parseLong(eventIdStr);
         ScheduleEvent event = ScheduleEventDB.findById(eventId);
         
-        if (event == null || !event.getUser().getId().equals(user.getId())) return;
+        if (event == null || !event.getUser().getId().equals(user.getId())) return false;
         
         String title = request.getParameter("title");
         String eventDateStr = request.getParameter("eventDate");
@@ -255,11 +284,34 @@ public class ScheduleServlet extends HttpServlet {
             LocalDate eventDate = LocalDate.parse(eventDateStr);
             LocalTime startTime = LocalTime.parse(startTimeStr);
             LocalTime endTime = LocalTime.parse(endTimeStr);
-            event.setStartTime(eventDate.atTime(startTime));
-            event.setEndTime(eventDate.atTime(endTime));
+            
+            // Validate thời gian trong khoảng 6h-23h
+            if (startTime.getHour() < 6 || startTime.getHour() > 23) {
+                request.setAttribute("errorMessage", "Start time must be between 06:00 and 23:00!");
+                return false;
+            }
+            if (endTime.getHour() < 6 || (endTime.getHour() == 0 && endTime.getMinute() == 0)) {
+                request.setAttribute("errorMessage", "End time must be between 06:00 and 23:59!");
+                return false;
+            }
+            
+            LocalDateTime newStartDateTime = eventDate.atTime(startTime);
+            LocalDateTime newEndDateTime = eventDate.atTime(endTime);
+            
+            // Kiểm tra trùng giờ (không tính event đang edit)
+            if (event.getRecurrenceRule() == null) {
+                if (ScheduleEventDB.hasOverlappingEvent(user, newStartDateTime, newEndDateTime, eventId)) {
+                    request.setAttribute("errorMessage", "Time slot already occupied by another event!");
+                    return false;
+                }
+            }
+            
+            event.setStartTime(newStartDateTime);
+            event.setEndTime(newEndDateTime);
         }
         
         ScheduleEventDB.update(event);
+        return true;
     }
 
     // Xử lý xóa event

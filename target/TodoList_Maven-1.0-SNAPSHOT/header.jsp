@@ -66,19 +66,7 @@
         color: #6c5ce7; /* Màu tím chủ đạo */
     }
 
-    /* Nút Logout nổi bật hơn chút */
-    .btn-logout {
-        padding: 8px 16px;
-        border: 1px solid #ff7675;
-        color: #ff7675 !important;
-        border-radius: 5px;
-        transition: all 0.3s ease;
-    }
 
-    .btn-logout:hover {
-        background-color: #ff7675;
-        color: white !important;
-    }
 </style>
 
 <header class="main-header">
@@ -97,7 +85,7 @@
                 
                 <li><a href="schedule" class="${pageContext.request.requestURI.endsWith('schedule.jsp') ? 'active' : ''}">Schedule</a></li>
                 
-                <li><a href="logout" class="btn-logout">Logout</a></li>
+                <li><a href="profile" class="${pageContext.request.requestURI.endsWith('profile.jsp') ? 'active' : ''}">Profile</a></li>
             </ul>
         </nav>
     </div>
