@@ -39,6 +39,15 @@
                 <button type="submit" class="btn-submit">Sign In</button>
             </form>
 
+            <div class="divider">
+                <span>hoặc</span>
+            </div>
+
+            <a href="zalo-login" class="btn-zalo">
+                <img src="https://page.widget.zalo.me/static/images/2.0/Logo.svg" alt="Zalo" class="zalo-icon">
+                <span>Đăng nhập bằng Zalo</span>
+            </a>
+
             <footer class="auth-footer">
                 Don't have an account? <a href="register">Sign up here</a>
             </footer>

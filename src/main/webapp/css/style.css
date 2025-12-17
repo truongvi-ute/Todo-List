@@ -140,3 +140,61 @@ body {
 .auth-footer a:hover {
     text-decoration: underline;
 }
+
+
+/* --- Divider --- */
+.divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 25px 0;
+    color: #999;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid #e1e1e1;
+}
+
+.divider span {
+    padding: 0 15px;
+    font-size: 0.9rem;
+}
+
+/* --- Nút Zalo Login --- */
+.btn-zalo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 20px;
+    background-color: #0068FF;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.btn-zalo:hover {
+    background-color: #0055d4;
+    box-shadow: 0 5px 15px rgba(0, 104, 255, 0.4);
+    color: #ffffff;
+}
+
+.btn-zalo .zalo-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.btn-zalo span {
+    line-height: 28px;
+}
