@@ -37,6 +37,9 @@ public class AuthFilter implements Filter {
         // Danh sách các trang được phép truy cập không cần đăng nhập
         boolean isLoginJsp = requestURI.endsWith("signin.jsp");
         boolean isSignupJsp = requestURI.endsWith("signup.jsp");
+        boolean isForgotPasswordJsp = requestURI.endsWith("forgot-password.jsp");
+        boolean isVerifyOtpJsp = requestURI.endsWith("verify-otp.jsp");
+        boolean isResetPasswordJsp = requestURI.endsWith("reset-password.jsp");
         boolean isLoginServlet = requestURI.endsWith("login");
         boolean isLogoutServlet = requestURI.endsWith("logout");
         boolean isCSS = requestURI.endsWith(".css");
@@ -46,7 +49,7 @@ public class AuthFilter implements Filter {
         boolean isLoggedIn = (session != null && session.getAttribute("loginedUser") != null);
 
         // Logic chặn/cho phép
-        if (isLoggedIn || isLoginJsp || isSignupJsp || isLoginServlet || isLogoutServlet || isCSS) {
+        if (isLoggedIn || isLoginJsp || isSignupJsp || isForgotPasswordJsp || isVerifyOtpJsp || isResetPasswordJsp || isLoginServlet || isLogoutServlet || isCSS) {
             chain.doFilter(request, response); // Cho phép truy cập
         } else {
             // Chưa đăng nhập -> Redirect về trang login
