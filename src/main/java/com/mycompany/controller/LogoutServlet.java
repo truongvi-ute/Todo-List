@@ -8,20 +8,28 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
+/**
+ * Servlet xử lý đăng xuất người dùng.
+ * URL: /logout
+ */
 @WebServlet(urlPatterns = {"/logout"})
 public class LogoutServlet extends HttpServlet {
 
+    /**
+     * Xử lý GET request - Đăng xuất.
+     * Hủy session hiện tại và chuyển về trang đăng nhập.
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
-        // 1. Lấy session hiện tại
+        // Lấy session hiện tại
         HttpSession session = request.getSession();
         
-        // 2. Hủy session (Xóa thông tin user đã đăng nhập)
+        // Hủy session (xóa thông tin user đã đăng nhập)
         session.invalidate();
         
-        // 3. Quay về trang đăng nhập
+        // Chuyển về trang đăng nhập
         response.sendRedirect(request.getContextPath() + "/login");
     }
 }

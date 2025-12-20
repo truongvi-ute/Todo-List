@@ -9,9 +9,18 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Data Access Object (DAO) cho entity ScheduleEvent.
+ * Cung cấp các phương thức CRUD và truy vấn cho schedule events.
+ * Hỗ trợ cả events đơn lẻ và recurring events.
+ */
 public class ScheduleEventDB {
 
-    // Thêm event mới
+    /**
+     * Thêm event mới vào database.
+     * 
+     * @param event ScheduleEvent object cần lưu
+     */
     public static void insert(ScheduleEvent event) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
@@ -28,7 +37,12 @@ public class ScheduleEventDB {
         }
     }
 
-    // Tìm event theo ID
+    /**
+     * Tìm event theo ID.
+     * 
+     * @param id ID của event
+     * @return ScheduleEvent nếu tìm thấy, null nếu không tồn tại
+     */
     public static ScheduleEvent findById(Long id) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
@@ -38,7 +52,11 @@ public class ScheduleEventDB {
         }
     }
 
-    // Cập nhật event
+    /**
+     * Cập nhật thông tin event.
+     * 
+     * @param event ScheduleEvent object đã được chỉnh sửa
+     */
     public static void update(ScheduleEvent event) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
@@ -55,7 +73,12 @@ public class ScheduleEventDB {
         }
     }
 
-    // Xóa event
+    /**
+     * Xóa event khỏi database.
+     * Cascade sẽ tự động xóa RecurrenceRule và modified instances liên quan.
+     * 
+     * @param id ID của event cần xóa
+     */
     public static void delete(Long id) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
@@ -75,7 +98,15 @@ public class ScheduleEventDB {
         }
     }
 
-    // Lấy tất cả events của user trong khoảng thời gian (không lặp lại)
+    /**
+     * Lấy danh sách events KHÔNG lặp lại của user trong khoảng thời gian.
+     * Sắp xếp theo thời gian bắt đầu.
+     * 
+     * @param user User sở hữu events
+     * @param startDate Ngày bắt đầu (inclusive)
+     * @param endDate Ngày kết thúc (exclusive)
+     * @return Danh sách ScheduleEvent không có recurrence rule
+     */
     public static List<ScheduleEvent> getEventsByUserAndDateRange(User user, LocalDateTime startDate, LocalDateTime endDate) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
@@ -93,7 +124,13 @@ public class ScheduleEventDB {
         }
     }
 
-    // Lấy tất cả recurring events của user (để hiển thị trong dropdown ngoại lệ)
+    /**
+     * Lấy tất cả recurring events của user.
+     * Dùng để hiển thị trong dropdown quản lý ngoại lệ.
+     * 
+     * @param user User sở hữu events
+     * @return Danh sách recurring events (có recurrence rule, không phải modified instance)
+     */
     public static List<ScheduleEvent> getRecurringEventsByUser(User user) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
@@ -109,13 +146,18 @@ public class ScheduleEventDB {
         }
     }
 
-    // Lấy tất cả recurring events có thể xuất hiện trong khoảng thời gian
+    /**
+     * Lấy recurring events có thể xuất hiện trong khoảng thời gian.
+     * Điều kiện: startTime <= endDate AND (untilDate >= startDate OR untilDate IS NULL)
+     * 
+     * @param user User sở hữu events
+     * @param startDate Ngày bắt đầu khoảng thời gian
+     * @param endDate Ngày kết thúc khoảng thời gian
+     * @return Danh sách recurring events cần expand
+     */
     public static List<ScheduleEvent> getRecurringEventsInRange(User user, LocalDate startDate, LocalDate endDate) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
-            // Lấy recurring events mà:
-            // - startTime <= endDate (bắt đầu trước hoặc trong khoảng)
-            // - untilDate >= startDate hoặc untilDate IS NULL (chưa kết thúc hoặc kết thúc sau khoảng)
             String jpql = "SELECT e FROM ScheduleEvent e " +
                           "LEFT JOIN FETCH e.recurrenceRule r " +
                           "WHERE e.user = :user " +
@@ -125,15 +167,21 @@ public class ScheduleEventDB {
                           "AND (r.untilDate IS NULL OR r.untilDate >= :startDate)";
             TypedQuery<ScheduleEvent> query = em.createQuery(jpql, ScheduleEvent.class);
             query.setParameter("user", user);
-            query.setParameter("startDate", startDate); // LocalDate cho untilDate
-            query.setParameter("endDateTime", endDate.plusDays(1).atStartOfDay()); // LocalDateTime cho startTime
+            query.setParameter("startDate", startDate);
+            query.setParameter("endDateTime", endDate.plusDays(1).atStartOfDay());
             return query.getResultList();
         } finally {
             em.close();
         }
     }
 
-    // Thêm ngày ngoại lệ vào RecurrenceRule
+    /**
+     * Thêm ngày ngoại lệ vào RecurrenceRule.
+     * Event sẽ không xuất hiện vào ngày này.
+     * 
+     * @param eventId ID của recurring event
+     * @param excludedDate Ngày cần loại trừ
+     */
     public static void addExcludedDate(Long eventId, LocalDate excludedDate) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
@@ -157,7 +205,16 @@ public class ScheduleEventDB {
         }
     }
 
-    // Tạo modified instance cho một ngày cụ thể của recurring event
+    /**
+     * Tạo modified instance cho một ngày cụ thể của recurring event.
+     * Dùng khi muốn thay đổi thời gian của một occurrence cụ thể.
+     * Ngày gốc sẽ được thêm vào excluded dates.
+     * 
+     * @param originalEventId ID của recurring event gốc
+     * @param date Ngày của occurrence cần modify
+     * @param newStartTime Thời gian bắt đầu mới
+     * @param newEndTime Thời gian kết thúc mới
+     */
     public static void createModifiedInstance(Long originalEventId, LocalDate date, 
             LocalDateTime newStartTime, LocalDateTime newEndTime) {
         EntityManager em = JPAUtil.getEntityManager();
@@ -165,7 +222,7 @@ public class ScheduleEventDB {
             em.getTransaction().begin();
             ScheduleEvent originalEvent = em.find(ScheduleEvent.class, originalEventId);
             if (originalEvent != null && originalEvent.getRecurrenceRule() != null) {
-                // Tạo instance mới
+                // Tạo instance mới với thời gian đã thay đổi
                 ScheduleEvent modifiedInstance = new ScheduleEvent(
                     originalEvent.getTitle(),
                     originalEvent.getDescription(),
@@ -176,7 +233,7 @@ public class ScheduleEventDB {
                 modifiedInstance.setOriginalEvent(originalEvent);
                 em.persist(modifiedInstance);
                 
-                // Thêm ngày gốc vào excluded dates
+                // Thêm ngày gốc vào excluded dates để không hiển thị occurrence gốc
                 RecurrenceRule rule = originalEvent.getRecurrenceRule();
                 if (!rule.getExcludedDates().contains(date)) {
                     rule.getExcludedDates().add(date);
@@ -194,7 +251,14 @@ public class ScheduleEventDB {
         }
     }
 
-    // Lấy modified instances của một recurring event trong khoảng thời gian
+    /**
+     * Lấy các modified instances của một recurring event trong khoảng thời gian.
+     * 
+     * @param originalEventId ID của recurring event gốc
+     * @param startDate Ngày bắt đầu
+     * @param endDate Ngày kết thúc
+     * @return Danh sách modified instances
+     */
     public static List<ScheduleEvent> getModifiedInstances(Long originalEventId, LocalDateTime startDate, LocalDateTime endDate) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
@@ -210,11 +274,20 @@ public class ScheduleEventDB {
         }
     }
     
-    // Kiểm tra xem có event nào trùng giờ không (không tính event đang edit)
+    /**
+     * Kiểm tra xem có event nào trùng giờ không.
+     * Chỉ kiểm tra events không lặp lại.
+     * 
+     * @param user User sở hữu events
+     * @param startTime Thời gian bắt đầu cần kiểm tra
+     * @param endTime Thời gian kết thúc cần kiểm tra
+     * @param excludeEventId ID của event cần loại trừ (khi edit), null nếu thêm mới
+     * @return true nếu có event trùng giờ, false nếu không
+     */
     public static boolean hasOverlappingEvent(User user, LocalDateTime startTime, LocalDateTime endTime, Long excludeEventId) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
-            // Kiểm tra overlap: event mới bắt đầu trước khi event cũ kết thúc VÀ event mới kết thúc sau khi event cũ bắt đầu
+            // Overlap condition: newStart < existingEnd AND newEnd > existingStart
             String jpql = "SELECT COUNT(e) FROM ScheduleEvent e WHERE e.user = :user " +
                           "AND e.startTime < :endTime AND e.endTime > :startTime " +
                           "AND e.recurrenceRule IS NULL";

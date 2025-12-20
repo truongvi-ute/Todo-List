@@ -1,9 +1,14 @@
 package com.mycompany.model;
 
-import jakarta.persistence.*; // Dùng javax cho Tomcat 9
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
+/**
+ * Abstract base class cho các loại todo item.
+ * Sử dụng @MappedSuperclass để các thuộc tính được kế thừa xuống subclass.
+ * Subclasses: DeadlineTask, ScheduleEvent
+ */
 @MappedSuperclass
 public abstract class TodoItem implements Serializable {
 
@@ -11,39 +16,50 @@ public abstract class TodoItem implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     protected Long id;
 
+    /** Tiêu đề của item */
     @Column(nullable = false)
     protected String title;
 
+    /** Mô tả chi tiết (có thể null) */
     @Column(columnDefinition = "TEXT")
     protected String description;
 
+    /** Loại item: TASK hoặc EVENT */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, updatable = false)
     protected ItemType type;
 
+    /** Thời gian tạo, tự động gán khi persist */
     @Column(name = "created_at", nullable = false, updatable = false)
     protected LocalDateTime createdAt;
 
-    // --- 1. CONSTRUCTOR RỖNG (BẮT BUỘC CHO JPA) ---
-    // JPA cần cái này để khởi tạo object qua Reflection
+    /** Constructor mặc định cho JPA */
     protected TodoItem() {
     }
 
-    // --- 2. CONSTRUCTOR ĐẦY ĐỦ (CHO LẬP TRÌNH VIÊN DÙNG) ---
-    // Lưu ý: Không truyền ID (vì tự tăng), Không truyền CreatedAt (vì tự gán)
+    /**
+     * Constructor đầy đủ.
+     * 
+     * @param title Tiêu đề
+     * @param description Mô tả
+     * @param type Loại item (TASK/EVENT)
+     */
     public TodoItem(String title, String description, ItemType type) {
         this.title = title;
         this.description = description;
         this.type = type;
     }
 
-    // --- Lifecycle Callback ---
+    /**
+     * JPA Lifecycle callback - tự động gán createdAt trước khi persist.
+     */
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
 
-    // --- Getters & Setters ---
+    // --- GETTERS & SETTERS ---
+    
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

@@ -19,9 +19,19 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+/**
+ * Servlet API gửi email nhắc nhở hàng ngày.
+ * URL: /api/daily-reminder
+ * Được gọi bởi cron job mỗi giờ để gửi reminder cho users.
+ */
 @WebServlet(urlPatterns = {"/api/daily-reminder"})
 public class DailyReminderServlet extends HttpServlet {
 
+    /**
+     * Xử lý GET request - Gửi daily reminder.
+     * Lấy users có notification_hour = giờ hiện tại và gửi email.
+     * Response: JSON với số lượng sent/failed.
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -59,6 +69,13 @@ public class DailyReminderServlet extends HttpServlet {
         out.print("{\"success\": true, \"sent\": " + sentCount + ", \"failed\": " + failCount + ", \"hour\": " + currentHour + "}");
     }
     
+    /**
+     * Tạo nội dung HTML cho email daily reminder.
+     * Bao gồm danh sách deadlines và schedules của ngày hôm nay.
+     * 
+     * @param user User cần gửi reminder
+     * @return HTML content, null nếu không có tasks/events
+     */
     private String buildDailyReminderEmail(User user) {
         LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
         LocalDateTime startOfDay = today.atStartOfDay();
@@ -120,6 +137,12 @@ public class DailyReminderServlet extends HttpServlet {
         return html.toString();
     }
     
+    /**
+     * Escape các ký tự HTML đặc biệt để tránh XSS.
+     * 
+     * @param text Text cần escape
+     * @return Text đã được escape
+     */
     private String escapeHtml(String text) {
         if (text == null) return "";
         return text.replace("&", "&amp;")

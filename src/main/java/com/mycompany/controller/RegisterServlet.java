@@ -12,9 +12,18 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import com.mycompany.model.User;
 
+/**
+ * Servlet xử lý đăng ký tài khoản mới.
+ * URL: /register
+ * Flow: Nhập thông tin -> Gửi OTP qua email -> Verify OTP -> Tạo tài khoản
+ */
 @WebServlet(urlPatterns = {"/register"})
 public class RegisterServlet extends HttpServlet {
 
+    /**
+     * Xử lý POST request - Bước 1 đăng ký.
+     * Validate thông tin, gửi OTP qua email nếu hợp lệ.
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -27,7 +36,7 @@ public class RegisterServlet extends HttpServlet {
         
         String url = "/signup.jsp";
         
-        // Validate
+        // Validate thông tin đăng ký
         if (UserDB.emailExists(email)) {
             request.setAttribute("message", "This email is already registered!");
         } else if (!pass.equals(confirmPass)) {
@@ -35,12 +44,14 @@ public class RegisterServlet extends HttpServlet {
         } else if (pass.length() < 6) {
             request.setAttribute("message", "Password must be at least 6 characters!");
         } else {
+            // Tạo và gửi OTP
             String otp = OtpService.generateOtp();
             OtpService.saveOtp(email, otp);
             
             boolean sent = EmailService.sendOtpEmail(email, otp);
             
             if (sent) {
+                // Lưu thông tin tạm vào session để dùng sau khi verify OTP
                 HttpSession session = request.getSession();
                 session.setAttribute("pendingEmail", email);
                 session.setAttribute("pendingPassword", pass);
@@ -56,6 +67,9 @@ public class RegisterServlet extends HttpServlet {
         getServletContext().getRequestDispatcher(url).forward(request, response);
     }
     
+    /**
+     * Xử lý GET request - Hiển thị form đăng ký.
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {

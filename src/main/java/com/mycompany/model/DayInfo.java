@@ -5,25 +5,42 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DTO để truyền dữ liệu ngày và danh sách task cho view
+ * DTO (Data Transfer Object) chứa thông tin một ngày trong tuần.
+ * Dùng để truyền dữ liệu từ Servlet sang JSP cho view deadline.
  */
 public class DayInfo {
     
+    /** Tên ngày viết tắt: Mon, Tue, Wed, ... */
     private String dayName;
+    
+    /** Ngày tháng format dd/MM */
     private String dateString;
+    
+    /** Đối tượng LocalDate */
     private LocalDate date;
+    
+    /** Danh sách tasks của ngày này */
     private List<DeadlineTask> tasks = new ArrayList<>();
 
+    /** Constructor mặc định */
     public DayInfo() {
     }
 
+    /**
+     * Constructor đầy đủ.
+     * 
+     * @param dayName Tên ngày (Mon, Tue, ...)
+     * @param dateString Ngày tháng (dd/MM)
+     * @param date LocalDate object
+     */
     public DayInfo(String dayName, String dateString, LocalDate date) {
         this.dayName = dayName;
         this.dateString = dateString;
         this.date = date;
     }
 
-    // Getters
+    // --- GETTERS ---
+    
     public String getDayName() {
         return dayName;
     }
@@ -40,7 +57,8 @@ public class DayInfo {
         return tasks;
     }
 
-    // Setters
+    // --- SETTERS ---
+    
     public void setDayName(String dayName) {
         this.dayName = dayName;
     }
@@ -57,7 +75,11 @@ public class DayInfo {
         this.tasks = tasks;
     }
 
-    // Helper method
+    /**
+     * Helper method thêm task vào ngày.
+     * 
+     * @param task Task cần thêm
+     */
     public void addTask(DeadlineTask task) {
         this.tasks.add(task);
     }

@@ -1,14 +1,13 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package com.mycompany.model;
 
 /**
- *
- * @author HP
+ * Enum định nghĩa loại TodoItem.
+ * Dùng để phân biệt DeadlineTask và ScheduleEvent.
  */
 public enum ItemType {
+    /** Deadline task - công việc có thời hạn */
     TASK,
+    
+    /** Schedule event - sự kiện lịch */
     EVENT
 }

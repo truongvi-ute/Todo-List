@@ -7,9 +7,17 @@ import jakarta.persistence.TypedQuery;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Data Access Object (DAO) cho entity DeadlineTask.
+ * Cung cấp các phương thức CRUD và truy vấn cho deadline tasks.
+ */
 public class DeadlineTaskDB {
 
-    // Thêm task mới
+    /**
+     * Thêm task mới vào database.
+     * 
+     * @param task DeadlineTask object cần lưu
+     */
     public static void insert(DeadlineTask task) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
@@ -26,7 +34,12 @@ public class DeadlineTaskDB {
         }
     }
 
-    // Tìm task theo ID
+    /**
+     * Tìm task theo ID.
+     * 
+     * @param id ID của task
+     * @return DeadlineTask nếu tìm thấy, null nếu không tồn tại
+     */
     public static DeadlineTask findById(Long id) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
@@ -36,7 +49,11 @@ public class DeadlineTaskDB {
         }
     }
 
-    // Cập nhật task
+    /**
+     * Cập nhật thông tin task.
+     * 
+     * @param task DeadlineTask object đã được chỉnh sửa
+     */
     public static void update(DeadlineTask task) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
@@ -53,8 +70,11 @@ public class DeadlineTaskDB {
         }
     }
 
-
-    // Xóa task
+    /**
+     * Xóa task khỏi database.
+     * 
+     * @param id ID của task cần xóa
+     */
     public static void delete(Long id) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
@@ -74,7 +94,15 @@ public class DeadlineTaskDB {
         }
     }
 
-    // Lấy tasks của user trong khoảng thời gian, sắp xếp theo thời gian tạo (mới nhất lên trên)
+    /**
+     * Lấy danh sách tasks của user trong khoảng thời gian.
+     * Sắp xếp theo thời gian tạo (mới nhất lên trên).
+     * 
+     * @param user User sở hữu tasks
+     * @param startDate Ngày bắt đầu (inclusive)
+     * @param endDate Ngày kết thúc (exclusive)
+     * @return Danh sách DeadlineTask
+     */
     public static List<DeadlineTask> getTasksByUserAndDateRange(User user, LocalDateTime startDate, LocalDateTime endDate) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
@@ -91,7 +119,16 @@ public class DeadlineTaskDB {
         }
     }
 
-    // Lấy tasks với filter status, sắp xếp theo thời gian tạo (mới nhất lên trên)
+    /**
+     * Lấy danh sách tasks với filter theo status.
+     * Sắp xếp theo thời gian tạo (mới nhất lên trên).
+     * 
+     * @param user User sở hữu tasks
+     * @param startDate Ngày bắt đầu
+     * @param endDate Ngày kết thúc
+     * @param statusFilter Filter status: "all", "IN_PROGRESS", "DONE", "LATE"
+     * @return Danh sách DeadlineTask đã lọc
+     */
     public static List<DeadlineTask> getTasksByUserDateRangeAndStatus(User user, LocalDateTime startDate, 
             LocalDateTime endDate, String statusFilter) {
         EntityManager em = JPAUtil.getEntityManager();
@@ -119,7 +156,15 @@ public class DeadlineTaskDB {
         }
     }
 
-    // Lấy tasks sắp xếp theo priority (HIGH > MEDIUM > LOW), sau đó theo thời gian tạo mới nhất
+    /**
+     * Lấy danh sách tasks sắp xếp theo độ ưu tiên.
+     * Thứ tự: HIGH > MEDIUM > LOW, sau đó theo thời gian tạo mới nhất.
+     * 
+     * @param user User sở hữu tasks
+     * @param startDate Ngày bắt đầu
+     * @param endDate Ngày kết thúc
+     * @return Danh sách DeadlineTask đã sắp xếp theo priority
+     */
     public static List<DeadlineTask> getTasksByUserDateRangeSortByPriority(User user, LocalDateTime startDate, 
             LocalDateTime endDate) {
         EntityManager em = JPAUtil.getEntityManager();
@@ -138,9 +183,9 @@ public class DeadlineTaskDB {
                 int p1 = getPriorityOrder(t1.getPriority());
                 int p2 = getPriorityOrder(t2.getPriority());
                 if (p1 != p2) {
-                    return p1 - p2; // Priority cao hơn lên trước
+                    return p1 - p2;
                 }
-                return t2.getCreatedAt().compareTo(t1.getCreatedAt()); // Mới hơn lên trước
+                return t2.getCreatedAt().compareTo(t1.getCreatedAt());
             });
             
             return tasks;
@@ -149,7 +194,12 @@ public class DeadlineTaskDB {
         }
     }
     
-    // Helper: Chuyển Priority thành số để sort
+    /**
+     * Chuyển đổi Priority enum thành số để sắp xếp.
+     * 
+     * @param priority Priority enum
+     * @return Số thứ tự (1=HIGH, 2=MEDIUM, 3=LOW, 4=null)
+     */
     private static int getPriorityOrder(com.mycompany.model.Priority priority) {
         if (priority == null) return 4;
         switch (priority) {
@@ -160,7 +210,15 @@ public class DeadlineTaskDB {
         }
     }
 
-    // Lấy tasks của user theo ngày cụ thể, sắp xếp theo sort preference
+    /**
+     * Lấy tasks của user theo ngày với tùy chọn sắp xếp.
+     * 
+     * @param user User sở hữu tasks
+     * @param startOfDay Đầu ngày
+     * @param endOfDay Cuối ngày
+     * @param sort Kiểu sắp xếp: "priority" hoặc "date"
+     * @return Danh sách DeadlineTask
+     */
     public static List<DeadlineTask> getTasksByUserAndDate(User user, LocalDateTime startOfDay, 
             LocalDateTime endOfDay, String sort) {
         if ("priority".equals(sort)) {

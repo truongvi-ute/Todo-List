@@ -2,6 +2,7 @@ package com.mycompany.controller;
 
 import com.mycompany.data.UserDB;
 import com.mycompany.model.User;
+import com.mycompany.service.PasswordUtil;
 import java.io.IOException;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -10,9 +11,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
+/**
+ * Servlet quản lý trang profile người dùng.
+ * URL: /profile
+ * Chức năng: Đổi mật khẩu, cài đặt thông báo email.
+ */
 @WebServlet(urlPatterns = {"/profile"})
 public class ProfileServlet extends HttpServlet {
 
+    /**
+     * Xử lý GET request - Hiển thị trang profile.
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -24,6 +33,10 @@ public class ProfileServlet extends HttpServlet {
         request.getRequestDispatcher("/profile.jsp").forward(request, response);
     }
 
+    /**
+     * Xử lý POST request - Cập nhật thông tin profile.
+     * Actions: changePassword, updateNotification
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -40,7 +53,7 @@ public class ProfileServlet extends HttpServlet {
         String action = request.getParameter("action");
         
         if ("changePassword".equals(action)) {
-            handleChangePassword(request, user);
+            handleChangePassword(request, user, session);
         } else if ("updateNotification".equals(action)) {
             handleUpdateNotification(request, user, session);
         }
@@ -48,24 +61,35 @@ public class ProfileServlet extends HttpServlet {
         request.getRequestDispatcher("/profile.jsp").forward(request, response);
     }
     
-    private void handleChangePassword(HttpServletRequest request, User user) {
+    /**
+     * Xử lý đổi mật khẩu.
+     * Validate password cũ, hash và lưu password mới.
+     */
+    private void handleChangePassword(HttpServletRequest request, User user, HttpSession session) {
         String currentPassword = request.getParameter("currentPassword");
         String newPassword = request.getParameter("newPassword");
         String confirmPassword = request.getParameter("confirmPassword");
         
-        if (!user.getPassword().equals(currentPassword)) {
+        // Xác thực password hiện tại bằng BCrypt
+        if (!PasswordUtil.verify(currentPassword, user.getPassword())) {
             request.setAttribute("message", "Current password is incorrect!");
         } else if (newPassword.length() < 6) {
             request.setAttribute("message", "New password must be at least 6 characters!");
         } else if (!newPassword.equals(confirmPassword)) {
             request.setAttribute("message", "New passwords do not match!");
         } else {
-            UserDB.updatePassword(user.getEmail(), newPassword);
-            user.setPassword(newPassword);
+            // Hash password mới và cập nhật
+            String hashedPassword = PasswordUtil.hash(newPassword);
+            UserDB.updatePassword(user.getEmail(), hashedPassword);
+            user.setPassword(hashedPassword);
+            session.setAttribute("loginedUser", user);
             request.setAttribute("message", "Password updated successfully!");
         }
     }
     
+    /**
+     * Xử lý cập nhật cài đặt thông báo email hàng ngày.
+     */
     private void handleUpdateNotification(HttpServletRequest request, User user, HttpSession session) {
         boolean enabled = request.getParameter("notificationEnabled") != null;
         int hour = Integer.parseInt(request.getParameter("notificationHour"));

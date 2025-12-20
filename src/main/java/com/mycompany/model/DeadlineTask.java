@@ -4,41 +4,56 @@ import java.io.Serializable;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+/**
+ * Entity đại diện cho một deadline task.
+ * Bảng: deadline_tasks
+ * Kế thừa từ TodoItem với type = TASK.
+ */
 @Entity
 @Table(name = "deadline_tasks")
 public class DeadlineTask extends TodoItem implements Serializable {
 
-    // --- CÁC THUỘC TÍNH RIÊNG CỦA DEADLINE TASK ---
-
+    /** Thời hạn hoàn thành task */
     @Column(name = "due_date")
     private LocalDateTime dueDate;
 
+    /** Độ ưu tiên: LOW, MEDIUM, HIGH */
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private Priority priority; // Enum: LOW, MEDIUM, HIGH
+    private Priority priority;
 
+    /** Trạng thái: IN_PROGRESS, DONE, LATE */
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
-    private Status status;     // Enum: TODO, DOING, DONE
+    private Status status;
 
-    // Quan hệ Many-to-One với User (Khóa ngoại user_id)
+    /** User sở hữu task này */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    /** Constructor mặc định cho JPA */
     public DeadlineTask() {
         super();
         this.type = ItemType.TASK; 
     }
 
+    /**
+     * Constructor tạo task mới.
+     * Status mặc định là IN_PROGRESS.
+     * 
+     * @param title Tiêu đề task
+     * @param description Mô tả
+     * @param dueDate Thời hạn
+     * @param priority Độ ưu tiên
+     * @param user User sở hữu
+     */
     public DeadlineTask(String title, String description, LocalDateTime dueDate, Priority priority, User user) {
-        // Gọi constructor cha để set Title, Description và gán cứng Type là TASK
         super(title, description, ItemType.TASK);
         
         this.dueDate = dueDate;
         this.priority = priority;
         this.user = user;
-        
         this.status = Status.IN_PROGRESS;
     }
 

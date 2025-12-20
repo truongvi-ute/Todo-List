@@ -22,9 +22,18 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Servlet hiển thị trang Dashboard (trang chủ sau đăng nhập).
+ * URL: /dashboard
+ * Hiển thị: Calendar, tasks và events của ngày được chọn.
+ */
 @WebServlet(urlPatterns = {"/dashboard"})
 public class DashboardServlet extends HttpServlet {
 
+    /**
+     * Xử lý GET request - Hiển thị dashboard.
+     * Lấy tasks và events cho ngày được chọn, tạo calendar data.
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -38,21 +47,20 @@ public class DashboardServlet extends HttpServlet {
         User user = (User) session.getAttribute("loginedUser");
         LocalDate today = LocalDate.now();
         
-        // Lấy ngày được chọn (ưu tiên param > session > today)
+        // Lấy ngày được chọn (ưu tiên: param > session > today)
         LocalDate selectedDate = today;
         String dateParam = request.getParameter("date");
         if (dateParam != null && !dateParam.isEmpty()) {
             selectedDate = LocalDate.parse(dateParam);
             session.setAttribute("dashboardSelectedDate", selectedDate.toString());
         } else {
-            // Lấy từ session nếu không có param
             String savedDate = (String) session.getAttribute("dashboardSelectedDate");
             if (savedDate != null) {
                 selectedDate = LocalDate.parse(savedDate);
             }
         }
         
-        // Lấy month offset cho calendar (ưu tiên param > session > 0)
+        // Lấy month offset cho calendar (để chuyển tháng)
         int monthOffset = 0;
         String monthOffsetParam = request.getParameter("monthOffset");
         if (monthOffsetParam != null && !monthOffsetParam.isEmpty()) {
@@ -65,7 +73,7 @@ public class DashboardServlet extends HttpServlet {
             }
         }
         
-        // Lấy sort preference từ session (đã lưu từ trang deadline)
+        // Lấy sort preference từ session
         String sort = (String) session.getAttribute("deadlineSort");
         if (sort == null) sort = "date";
         
@@ -83,14 +91,14 @@ public class DashboardServlet extends HttpServlet {
             }
         }
         
-        // Query schedule events cho ngày được chọn
+        // Query schedule events cho ngày được chọn (bao gồm recurring)
         List<ScheduleEvent> scheduleEvents = getEventsForDate(user, selectedDate);
         
-        // Tạo calendar data
+        // Tạo calendar data (42 ngày)
         YearMonth viewMonth = YearMonth.from(selectedDate).plusMonths(monthOffset);
         List<LocalDate> calendarDays = buildCalendarDays(viewMonth);
         
-        // Set attributes
+        // Set attributes cho JSP
         request.setAttribute("today", today);
         request.setAttribute("selectedDate", selectedDate);
         request.setAttribute("deadlineTasks", deadlineTasks);
@@ -101,12 +109,12 @@ public class DashboardServlet extends HttpServlet {
         request.setAttribute("calendarDays", calendarDays);
         request.setAttribute("monthOffset", monthOffset);
         
-        // Debug log
-        System.out.println("Dashboard: selectedDate=" + selectedDate + ", tasks=" + deadlineTasks.size() + ", events=" + scheduleEvents.size());
-        
         getServletContext().getRequestDispatcher("/home.jsp").forward(request, response);
     }
 
+    /**
+     * Xử lý POST request - Toggle trạng thái task.
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -126,6 +134,7 @@ public class DashboardServlet extends HttpServlet {
                 Long taskId = Long.parseLong(taskIdStr);
                 DeadlineTask task = DeadlineTaskDB.findById(taskId);
                 
+                // Toggle status DONE <-> IN_PROGRESS (không cho toggle task LATE)
                 if (task != null && task.getStatus() != Status.LATE) {
                     if (task.getStatus() == Status.DONE) {
                         task.setStatus(Status.IN_PROGRESS);
@@ -145,7 +154,13 @@ public class DashboardServlet extends HttpServlet {
         response.sendRedirect(redirectUrl);
     }
 
-    // Lấy events cho ngày cụ thể (bao gồm recurring)
+    /**
+     * Lấy tất cả events cho ngày cụ thể (bao gồm recurring events).
+     * 
+     * @param user User sở hữu events
+     * @param date Ngày cần lấy events
+     * @return Danh sách events đã sắp xếp theo startTime
+     */
     private List<ScheduleEvent> getEventsForDate(User user, LocalDate date) {
         List<ScheduleEvent> result = new ArrayList<>();
         
@@ -179,7 +194,14 @@ public class DashboardServlet extends HttpServlet {
         return result;
     }
 
-    // Kiểm tra recurring event có xuất hiện trong ngày không
+    /**
+     * Kiểm tra recurring event có xuất hiện trong ngày cụ thể không.
+     * Xét các yếu tố: frequency, byDays, excludedDates, untilDate.
+     * 
+     * @param event Recurring event cần kiểm tra
+     * @param date Ngày cần kiểm tra
+     * @return true nếu event xuất hiện trong ngày này
+     */
     private boolean isEventOnDate(ScheduleEvent event, LocalDate date) {
         RecurrenceRule rule = event.getRecurrenceRule();
         if (rule == null) return false;
@@ -214,7 +236,13 @@ public class DashboardServlet extends HttpServlet {
         }
     }
 
-    // Tạo danh sách 42 ngày cho calendar
+    /**
+     * Tạo danh sách 42 ngày cho calendar (6 tuần).
+     * Bắt đầu từ thứ Hai của tuần chứa ngày 1 của tháng.
+     * 
+     * @param viewMonth Tháng cần hiển thị
+     * @return Danh sách 42 LocalDate
+     */
     private List<LocalDate> buildCalendarDays(YearMonth viewMonth) {
         List<LocalDate> days = new ArrayList<>();
         

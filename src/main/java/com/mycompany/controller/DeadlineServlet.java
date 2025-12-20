@@ -23,14 +23,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Servlet quản lý Deadline Tasks.
+ * URL: /deadline
+ * Hiển thị tasks theo tuần, hỗ trợ CRUD và filter/sort.
+ */
 @WebServlet(urlPatterns = {"/deadline"})
 public class DeadlineServlet extends HttpServlet {
 
+    /**
+     * Xử lý GET request - Hiển thị danh sách tasks theo tuần.
+     * Hỗ trợ chuyển tuần, filter theo status, sort theo date/priority.
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
-        // Kiểm tra đăng nhập
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("loginedUser") == null) {
             response.sendRedirect(request.getContextPath() + "/signin.jsp");
@@ -45,7 +53,7 @@ public class DeadlineServlet extends HttpServlet {
             weekOffset = 0;
         }
         
-        // Xử lý action chuyển tuần từ GET request
+        // Xử lý action chuyển tuần
         String action = request.getParameter("action");
         if ("prevWeek".equals(action)) {
             weekOffset--;
@@ -55,15 +63,13 @@ public class DeadlineServlet extends HttpServlet {
             session.setAttribute("weekOffset", weekOffset);
         }
         
-        // Lấy filter và sort params (ưu tiên từ request, nếu không có thì lấy từ session)
+        // Lấy filter và sort params (ưu tiên request > session > default)
         String filter = request.getParameter("filter");
         String sort = request.getParameter("sort");
         
-        // Nếu có param mới từ request -> lưu vào session
         if (filter != null) {
             session.setAttribute("deadlineFilter", filter);
         } else {
-            // Lấy từ session, nếu không có thì mặc định "all"
             filter = (String) session.getAttribute("deadlineFilter");
             if (filter == null) filter = "all";
         }
@@ -71,7 +77,6 @@ public class DeadlineServlet extends HttpServlet {
         if (sort != null) {
             session.setAttribute("deadlineSort", sort);
         } else {
-            // Lấy từ session, nếu không có thì mặc định "date"
             sort = (String) session.getAttribute("deadlineSort");
             if (sort == null) sort = "date";
         }
@@ -97,7 +102,7 @@ public class DeadlineServlet extends HttpServlet {
             tasks = DeadlineTaskDB.getTasksByUserAndDateRange(user, startDateTime, endDateTime);
         }
         
-        // Cập nhật status LATE cho các task quá hạn (chưa DONE và đã qua ngày)
+        // Cập nhật status LATE cho các task quá hạn
         LocalDate realToday = LocalDate.now();
         for (DeadlineTask task : tasks) {
             if (task.getStatus() != Status.DONE && task.getDueDate().toLocalDate().isBefore(realToday)) {
@@ -124,19 +129,21 @@ public class DeadlineServlet extends HttpServlet {
         request.setAttribute("currentFilter", filter);
         request.setAttribute("currentSort", sort);
         request.setAttribute("today", realToday);
-        request.setAttribute("todayStr", realToday.toString()); // yyyy-MM-dd cho input date min
+        request.setAttribute("todayStr", realToday.toString());
         
         getServletContext().getRequestDispatcher("/deadline.jsp").forward(request, response);
     }
 
-
+    /**
+     * Xử lý POST request - CRUD operations cho tasks.
+     * Actions: add, edit, delete, toggleStatus
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
         request.setCharacterEncoding("UTF-8");
         
-        // Kiểm tra đăng nhập
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("loginedUser") == null) {
             response.sendRedirect(request.getContextPath() + "/signin.jsp");
@@ -163,11 +170,13 @@ public class DeadlineServlet extends HttpServlet {
                 break;
         }
         
-        // Redirect về GET để refresh trang
         response.sendRedirect(request.getContextPath() + "/deadline");
     }
 
-    // Xử lý thêm task mới
+    /**
+     * Xử lý thêm task mới.
+     * Không cho phép thêm task vào ngày quá khứ.
+     */
     private void handleAddTask(HttpServletRequest request, User user) {
         String title = request.getParameter("title");
         String description = request.getParameter("description");
@@ -179,11 +188,10 @@ public class DeadlineServlet extends HttpServlet {
             
             // Không cho thêm task vào quá khứ
             if (dueDate.isBefore(LocalDate.now())) {
-                return; // Bỏ qua, không thêm
+                return;
             }
             
-            LocalDateTime dueDateTime = dueDate.atTime(23, 59); // Cuối ngày
-            
+            LocalDateTime dueDateTime = dueDate.atTime(23, 59);
             Priority priority = Priority.valueOf(priorityStr);
             
             DeadlineTask task = new DeadlineTask(title.trim(), description, dueDateTime, priority, user);
@@ -191,7 +199,10 @@ public class DeadlineServlet extends HttpServlet {
         }
     }
 
-    // Xử lý chỉnh sửa task
+    /**
+     * Xử lý chỉnh sửa task.
+     * Không cho sửa task LATE hoặc sửa sang ngày quá khứ.
+     */
     private void handleEditTask(HttpServletRequest request, User user) {
         String taskIdStr = request.getParameter("taskId");
         String title = request.getParameter("title");
@@ -226,7 +237,10 @@ public class DeadlineServlet extends HttpServlet {
         }
     }
 
-    // Xử lý xóa task
+    /**
+     * Xử lý xóa task.
+     * Chỉ cho xóa task của chính user và không phải LATE.
+     */
     private void handleDeleteTask(HttpServletRequest request, User user) {
         String taskIdStr = request.getParameter("taskId");
         
@@ -234,14 +248,16 @@ public class DeadlineServlet extends HttpServlet {
             Long taskId = Long.parseLong(taskIdStr);
             DeadlineTask task = DeadlineTaskDB.findById(taskId);
             
-            // Chỉ cho xóa task của chính user đó và không phải LATE
             if (task != null && task.getUser().getId().equals(user.getId()) && task.getStatus() != Status.LATE) {
                 DeadlineTaskDB.delete(taskId);
             }
         }
     }
 
-    // Xử lý toggle trạng thái DONE/IN_PROGRESS
+    /**
+     * Xử lý toggle trạng thái DONE <-> IN_PROGRESS.
+     * Không cho toggle task của ngày quá khứ (LATE).
+     */
     private void handleToggleStatus(HttpServletRequest request) {
         String taskIdStr = request.getParameter("taskId");
         
@@ -250,10 +266,9 @@ public class DeadlineServlet extends HttpServlet {
             DeadlineTask task = DeadlineTaskDB.findById(taskId);
             
             if (task != null) {
-                // Không cho tick task của quá khứ (đã LATE)
                 LocalDate taskDate = task.getDueDate().toLocalDate();
                 if (taskDate.isBefore(LocalDate.now())) {
-                    return; // Bỏ qua, không toggle
+                    return; // Không toggle task quá hạn
                 }
                 
                 if (task.getStatus() == Status.DONE) {
@@ -266,7 +281,12 @@ public class DeadlineServlet extends HttpServlet {
         }
     }
 
-    // Build list of 7 days in week
+    /**
+     * Tạo danh sách 7 ngày trong tuần (Mon-Sun).
+     * 
+     * @param monday Ngày thứ Hai của tuần
+     * @return Danh sách DayInfo cho 7 ngày
+     */
     private List<DayInfo> buildWeekDays(LocalDate monday) {
         List<DayInfo> days = new ArrayList<>();
         String[] dayNames = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};

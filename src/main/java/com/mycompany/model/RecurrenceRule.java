@@ -7,6 +7,11 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Entity định nghĩa quy tắc lặp lại cho ScheduleEvent.
+ * Bảng: recurrence_rules
+ * Hỗ trợ: DAILY, WEEKLY (với byDays), MONTHLY, YEARLY.
+ */
 @Entity
 @Table(name = "recurrence_rules")
 public class RecurrenceRule implements Serializable {
@@ -15,34 +20,50 @@ public class RecurrenceRule implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Tần suất lặp: DAILY, WEEKLY, MONTHLY, YEARLY */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private FrequencyType frequency; // Enum: DAILY, WEEKLY, MONTHLY
+    private FrequencyType frequency;
 
+    /** Ngày kết thúc lặp (null = lặp vô hạn) */
     @Column(name = "until_date")
-    private LocalDate untilDate; // Lặp đến ngày nào thì dừng
+    private LocalDate untilDate;
 
-    // Lưu danh sách các ngày trong tuần (VD: MONDAY, WEDNESDAY)
-    // @ElementCollection giúp lưu List đơn giản vào bảng phụ mà không cần tạo Entity mới
+    /** 
+     * Danh sách các ngày trong tuần cho WEEKLY frequency.
+     * VD: [MONDAY, WEDNESDAY, FRIDAY] = lặp vào T2, T4, T6.
+     * Lưu trong bảng phụ recurrence_days.
+     */
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "recurrence_days", joinColumns = @JoinColumn(name = "rule_id"))
     @Column(name = "day_of_week")
     @Enumerated(EnumType.STRING)
     private List<DayOfWeek> byDays = new ArrayList<>();
 
-    // Lưu danh sách các ngày bị hủy (Nghỉ, không diễn ra sự kiện)
+    /** 
+     * Danh sách các ngày bị loại trừ (không diễn ra event).
+     * Dùng cho exceptions: nghỉ lễ, hủy buổi học, etc.
+     * Lưu trong bảng phụ recurrence_exclusions.
+     */
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "recurrence_exclusions", joinColumns = @JoinColumn(name = "rule_id"))
     @Column(name = "excluded_date")
     private List<LocalDate> excludedDates = new ArrayList<>();
 
-    // Quan hệ ngược về ScheduleEvent (nếu cần truy vấn ngược)
+    /** Quan hệ ngược về ScheduleEvent */
     @OneToOne(mappedBy = "recurrenceRule")
     private ScheduleEvent event;
 
+    /** Constructor mặc định cho JPA */
     public RecurrenceRule() {
     }
 
+    /**
+     * Constructor tạo rule mới.
+     * 
+     * @param frequency Tần suất lặp
+     * @param untilDate Ngày kết thúc (null = vô hạn)
+     */
     public RecurrenceRule(FrequencyType frequency, LocalDate untilDate) {
         this.frequency = frequency;
         this.untilDate = untilDate;

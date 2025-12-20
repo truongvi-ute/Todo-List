@@ -25,14 +25,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Servlet quản lý Schedule Events.
+ * URL: /schedule
+ * Hiển thị events theo tuần, hỗ trợ recurring events và exceptions.
+ */
 @WebServlet(urlPatterns = {"/schedule"})
 public class ScheduleServlet extends HttpServlet {
 
+    /**
+     * Xử lý GET request - Hiển thị lịch theo tuần.
+     * Bao gồm cả events đơn lẻ và recurring events đã expand.
+     */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
-        // Kiểm tra đăng nhập
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("loginedUser") == null) {
             response.sendRedirect(request.getContextPath() + "/signin.jsp");
@@ -90,13 +98,12 @@ public class ScheduleServlet extends HttpServlet {
             LocalDate date = (LocalDate) day.get("date");
             List<ScheduleEvent> dayEvents = eventsByDate.get(date);
             if (dayEvents != null) {
-                // Sort theo startTime
                 dayEvents.sort((e1, e2) -> e1.getStartTime().compareTo(e2.getStartTime()));
                 day.put("events", dayEvents);
             }
         }
         
-        // Lấy recurring events cho dropdown ngoại lệ
+        // Lấy recurring events cho dropdown quản lý ngoại lệ
         List<ScheduleEvent> recurringForDropdown = ScheduleEventDB.getRecurringEventsByUser(user);
         request.setAttribute("recurringEvents", recurringForDropdown);
         
@@ -109,13 +116,16 @@ public class ScheduleServlet extends HttpServlet {
         getServletContext().getRequestDispatcher("/schedule.jsp").forward(request, response);
     }
 
+    /**
+     * Xử lý POST request - CRUD operations cho events.
+     * Actions: add, edit, delete, addException
+     */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
         request.setCharacterEncoding("UTF-8");
         
-        // Kiểm tra đăng nhập
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("loginedUser") == null) {
             response.sendRedirect(request.getContextPath() + "/signin.jsp");
@@ -148,7 +158,7 @@ public class ScheduleServlet extends HttpServlet {
                 break;
         }
         
-        // Redirect về GET với error message nếu có
+        // Redirect với error message nếu có
         if (errorMessage != null) {
             response.sendRedirect(request.getContextPath() + "/schedule?error=" + java.net.URLEncoder.encode(errorMessage, "UTF-8"));
         } else {
@@ -156,7 +166,12 @@ public class ScheduleServlet extends HttpServlet {
         }
     }
 
-    // Build list of 7 days in week
+    /**
+     * Tạo danh sách 7 ngày trong tuần với metadata.
+     * 
+     * @param monday Ngày thứ Hai của tuần
+     * @return List of Map chứa dayName, dateString, date, events
+     */
     private List<Map<String, Object>> buildWeekDays(LocalDate monday) {
         List<Map<String, Object>> days = new ArrayList<>();
         String[] dayNames = {"Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
@@ -168,14 +183,20 @@ public class ScheduleServlet extends HttpServlet {
             day.put("dayName", dayNames[i]);
             day.put("dateString", date.format(formatter));
             day.put("date", date);
-            day.put("events", new ArrayList<>()); // Danh sách events của ngày
+            day.put("events", new ArrayList<>());
             days.add(day);
         }
         
         return days;
     }
 
-    // Xử lý thêm event mới
+    /**
+     * Xử lý thêm event mới.
+     * Hỗ trợ recurring events với frequency: DAILY, WEEKLY, MONTHLY, YEARLY.
+     * Validate: thời gian 6h-23h, không trùng giờ với event khác.
+     * 
+     * @return true nếu thành công, false nếu có lỗi
+     */
     private boolean handleAddEvent(HttpServletRequest request, User user) {
         String title = request.getParameter("title");
         String eventDateStr = request.getParameter("eventDate");
@@ -194,7 +215,7 @@ public class ScheduleServlet extends HttpServlet {
             LocalTime startTime = LocalTime.parse(startTimeStr);
             LocalTime endTime = LocalTime.parse(endTimeStr);
             
-            // Validate năm hợp lệ (1900-2100)
+            // Validate năm hợp lệ
             if (eventDate.getYear() < 1900 || eventDate.getYear() > 2100) {
                 return false;
             }
@@ -258,7 +279,12 @@ public class ScheduleServlet extends HttpServlet {
         }
     }
 
-    // Xử lý sửa event
+    /**
+     * Xử lý sửa event.
+     * Validate quyền sở hữu và không trùng giờ.
+     * 
+     * @return true nếu thành công, false nếu có lỗi
+     */
     private boolean handleEditEvent(HttpServletRequest request, User user) {
         String eventIdStr = request.getParameter("eventId");
         if (eventIdStr == null || eventIdStr.isEmpty()) return false;
@@ -266,6 +292,7 @@ public class ScheduleServlet extends HttpServlet {
         Long eventId = Long.parseLong(eventIdStr);
         ScheduleEvent event = ScheduleEventDB.findById(eventId);
         
+        // Kiểm tra quyền sở hữu
         if (event == null || !event.getUser().getId().equals(user.getId())) return false;
         
         String title = request.getParameter("title");
@@ -285,7 +312,7 @@ public class ScheduleServlet extends HttpServlet {
             LocalTime startTime = LocalTime.parse(startTimeStr);
             LocalTime endTime = LocalTime.parse(endTimeStr);
             
-            // Validate thời gian trong khoảng 6h-23h
+            // Validate thời gian
             if (startTime.getHour() < 6 || startTime.getHour() > 23) {
                 request.setAttribute("errorMessage", "Start time must be between 06:00 and 23:00!");
                 return false;
@@ -314,7 +341,10 @@ public class ScheduleServlet extends HttpServlet {
         return true;
     }
 
-    // Xử lý xóa event
+    /**
+     * Xử lý xóa event.
+     * Chỉ cho xóa event của chính user.
+     */
     private void handleDeleteEvent(HttpServletRequest request, User user) {
         String eventIdStr = request.getParameter("eventId");
         if (eventIdStr == null || eventIdStr.isEmpty()) return;
@@ -327,7 +357,10 @@ public class ScheduleServlet extends HttpServlet {
         }
     }
 
-    // Xử lý thêm ngoại lệ
+    /**
+     * Xử lý thêm ngoại lệ cho recurring event.
+     * Types: skip (bỏ qua ngày), add (thêm ngày), modify (đổi giờ).
+     */
     private void handleAddException(HttpServletRequest request, User user) {
         String eventIdStr = request.getParameter("eventId");
         String exceptionDateStr = request.getParameter("exceptionDate");
@@ -347,13 +380,13 @@ public class ScheduleServlet extends HttpServlet {
             // Bỏ qua ngày này
             ScheduleEventDB.addExcludedDate(eventId, exceptionDate);
         } else if ("add".equals(exceptionType)) {
-            // Thêm ngày này (tạo instance mới với giờ gốc)
+            // Thêm ngày này với giờ gốc
             LocalTime originalStartTime = event.getStartTime().toLocalTime();
             LocalTime originalEndTime = event.getEndTime().toLocalTime();
             ScheduleEventDB.createModifiedInstance(eventId, exceptionDate,
                     exceptionDate.atTime(originalStartTime), exceptionDate.atTime(originalEndTime));
         } else if ("modify".equals(exceptionType)) {
-            // Thay đổi thời gian
+            // Thay đổi thời gian cho ngày cụ thể
             String newStartTimeStr = request.getParameter("newStartTime");
             String newEndTimeStr = request.getParameter("newEndTime");
             
@@ -368,7 +401,15 @@ public class ScheduleServlet extends HttpServlet {
         }
     }
 
-    // Expand recurring events thành các instances trong khoảng thời gian
+    /**
+     * Expand recurring events thành các instances trong khoảng thời gian.
+     * Xử lý: frequency, byDays, excludedDates, untilDate.
+     * 
+     * @param recurringEvents Danh sách recurring events gốc
+     * @param startDate Ngày bắt đầu khoảng thời gian
+     * @param endDate Ngày kết thúc khoảng thời gian
+     * @return Danh sách virtual instances
+     */
     private List<ScheduleEvent> expandRecurringEvents(List<ScheduleEvent> recurringEvents, 
             LocalDate startDate, LocalDate endDate) {
         List<ScheduleEvent> expanded = new ArrayList<>();
@@ -403,7 +444,7 @@ public class ScheduleServlet extends HttpServlet {
                                 current.atTime(eventEndTime),
                                 event.getUser()
                             );
-                            instance.setId(event.getId()); // Giữ ID gốc để reference
+                            instance.setId(event.getId());
                             expanded.add(instance);
                         }
                     }

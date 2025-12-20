@@ -15,6 +15,7 @@ com\mycompany\service\OtpService.class
 com\mycompany\controller\ProfileServlet.class
 com\mycompany\data\UserDB.class
 com\mycompany\controller\RegisterServlet.class
+com\mycompany\service\PasswordUtil.class
 com\mycompany\model\ItemType.class
 com\mycompany\controller\LogoutServlet.class
 com\mycompany\controller\LoginServlet.class
@@ -26,7 +27,6 @@ com\mycompany\controller\ForgotPasswordServlet.class
 com\mycompany\data\DeadlineTaskDB$1.class
 com\mycompany\controller\DailyReminderServlet.class
 com\mycompany\controller\DeadlineServlet.class
-com\mycompany\data\TestDB.class
 com\mycompany\controller\ScheduleServlet$1.class
 com\mycompany\data\JPAUtil.class
 com\mycompany\todolist_maven\JakartaRestConfiguration.class

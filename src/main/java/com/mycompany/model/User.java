@@ -1,74 +1,67 @@
 package com.mycompany.model;
 
-import jakarta.persistence.*; // Nếu dùng Hibernate cũ (bản < 6) thì đổi thành jakarta.persistence.*
+import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Entity đại diện cho người dùng trong hệ thống.
+ * Bảng: users
+ * Quan hệ: 1-N với DeadlineTask, 1-N với ScheduleEvent
+ */
 @Entity
-@Table(name = "users") // Đặt tên bảng là 'users' để tránh trùng từ khóa 'User' trong SQL (ví dụ Postgres)
+@Table(name = "users")
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Mật khẩu đã được hash bằng BCrypt */
     @Column(nullable = false)
     private String password;
 
+    /** Email dùng để đăng nhập, phải unique */
     @Column(nullable = false, unique = true)
     private String email;
     
-    // Notification settings
+    /** Bật/tắt nhận email nhắc nhở hàng ngày */
     @Column(name = "notification_enabled")
     private Boolean notificationEnabled = false;
     
+    /** Giờ gửi email nhắc nhở (0-23), mặc định 6h sáng */
     @Column(name = "notification_hour")
-    private Integer notificationHour = 6; // Default 6 AM
+    private Integer notificationHour = 6;
 
-    // --- QUAN HỆ VỚI DEADLINE TASK ---
-    // mappedBy = "user": Nghĩa là biến 'user' bên class DeadlineTask nắm giữ khóa ngoại
-    // CascadeType.ALL: Xóa User thì xóa luôn Task của họ
-    // orphanRemoval = true: Nếu xóa Task khỏi list này, nó sẽ bị xóa khỏi DB
+    /**
+     * Danh sách deadline tasks của user.
+     * CascadeType.ALL: Xóa user sẽ xóa luôn tasks.
+     * orphanRemoval: Xóa task khỏi list sẽ xóa khỏi DB.
+     */
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<DeadlineTask> tasks = new ArrayList<>();
 
-    // --- QUAN HỆ VỚI SCHEDULE EVENT ---
+    /** Danh sách schedule events của user */
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ScheduleEvent> events = new ArrayList<>();
 
-    // --- CONSTRUCTORS ---
+    /** Constructor mặc định cho JPA */
     public User() {
     }
 
+    /**
+     * Constructor tạo user mới.
+     * 
+     * @param email Email đăng nhập
+     * @param password Mật khẩu đã hash
+     */
     public User(String email, String password) {
         this.password = password;
         this.email = email;
     }
 
-    // --- HELPER METHODS CHO QUAN HỆ 2 CHIỀU (Best Practice) ---
-    // Giúp đồng bộ dữ liệu giữa List của User và biến user bên Task
-//    
-//    public void addDeadlineTask(DeadlineTask task) {
-//        tasks.add(task);
-//        task.setUser(this);
-//    }
-//
-//    public void removeDeadlineTask(DeadlineTask task) {
-//        tasks.remove(task);
-//        task.setUser(null);
-//    }
-//
-//    public void addScheduleEvent(ScheduleEvent event) {
-//        events.add(event);
-//        event.setUser(this);
-//    }
-//
-//    public void removeScheduleEvent(ScheduleEvent event) {
-//        events.remove(event);
-//        event.setUser(null);
-//    }
-
     // --- GETTERS & SETTERS ---
+    
     public Long getId() {
         return id;
     }
