@@ -36,7 +36,7 @@
     /* Phần bên trái: Ngày tháng */
     .header-left .current-date {
         font-weight: bold;
-        color: #555;
+        color: #6c5ce7;
         font-size: 0.95rem;
         display: flex;
         align-items: center;

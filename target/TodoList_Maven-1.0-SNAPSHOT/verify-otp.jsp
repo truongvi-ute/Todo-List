@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TodoList</title>
+    <link rel="icon" type="image/png" href="img/logo.png">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -30,7 +31,7 @@
             <div class="form-group">
                 <label for="otp">OTP Code</label>
                 <input type="text" id="otp" name="otp" class="form-control otp-input" 
-                       placeholder="Enter 6-digit code" required maxlength="6" pattern="[0-9]{6}"
+                       placeholder="000000" required maxlength="6" pattern="[0-9]{6}"
                        autocomplete="one-time-code">
             </div>
 
