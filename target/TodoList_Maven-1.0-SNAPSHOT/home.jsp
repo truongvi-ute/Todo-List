@@ -55,17 +55,17 @@
                     <h4>Schedule</h4>
                     <div class="event-list">
                         <c:choose>
-                            <c:when test="${empty scheduleEvents}">
+                            <c:when test="${empty dayEvents}">
                                 <p class="empty-message">No events</p>
                             </c:when>
                             <c:otherwise>
-                                <c:forEach var="event" items="${scheduleEvents}">
-                                    <div class="event-item">
+                                <c:forEach var="event" items="${dayEvents}">
+                                    <div class="event-item ${event.status == 'CANCELLED' ? 'cancelled' : ''}">
                                         <span class="event-time">
-                                            ${event.startTime.hour}:${event.startTime.minute < 10 ? '0' : ''}${event.startTime.minute} - 
-                                            ${event.endTime.hour}:${event.endTime.minute < 10 ? '0' : ''}${event.endTime.minute}
+                                            ${event.effectiveStartTime.hour}:${event.effectiveStartTime.minute < 10 ? '0' : ''}${event.effectiveStartTime.minute} - 
+                                            ${event.effectiveEndTime.hour}:${event.effectiveEndTime.minute < 10 ? '0' : ''}${event.effectiveEndTime.minute}
                                         </span>
-                                        <span class="event-title">${event.title}</span>
+                                        <span class="event-title">${event.scheduleEvent.title}</span>
                                     </div>
                                 </c:forEach>
                             </c:otherwise>

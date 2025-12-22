@@ -1,10 +1,10 @@
 package com.mycompany.controller;
 
+import com.mycompany.data.DayEventDB;
 import com.mycompany.data.DeadlineTaskDB;
-import com.mycompany.data.ScheduleEventDB;
 import com.mycompany.data.UserDB;
+import com.mycompany.model.DayEvent;
 import com.mycompany.model.DeadlineTask;
-import com.mycompany.model.ScheduleEvent;
 import com.mycompany.model.User;
 import com.mycompany.service.EmailService;
 import java.io.IOException;
@@ -84,11 +84,11 @@ public class DailyReminderServlet extends HttpServlet {
         // Lấy deadlines hôm nay
         List<DeadlineTask> deadlines = DeadlineTaskDB.getTasksByUserAndDateRange(user, startOfDay, endOfDay);
         
-        // Lấy schedules hôm nay
-        List<ScheduleEvent> schedules = ScheduleEventDB.getEventsByUserAndDateRange(user, startOfDay, endOfDay);
+        // Lấy DayEvents hôm nay (đã filter ACTIVE)
+        List<DayEvent> dayEvents = DayEventDB.getByUserAndDate(user, today);
         
         // Nếu không có gì thì không gửi
-        if (deadlines.isEmpty() && schedules.isEmpty()) {
+        if (deadlines.isEmpty() && dayEvents.isEmpty()) {
             return null;
         }
         
@@ -113,18 +113,14 @@ public class DailyReminderServlet extends HttpServlet {
         }
         
         // Schedules section
-        if (!schedules.isEmpty()) {
-            html.append("<h3 style='color: #3498db; margin-top: 20px;'>Schedule (").append(schedules.size()).append(")</h3>");
+        if (!dayEvents.isEmpty()) {
+            html.append("<h3 style='color: #3498db; margin-top: 20px;'>Schedule (").append(dayEvents.size()).append(")</h3>");
             html.append("<ul style='padding-left: 20px;'>");
-            for (ScheduleEvent event : schedules) {
+            for (DayEvent dayEvent : dayEvents) {
                 html.append("<li style='margin-bottom: 8px;'>");
-                html.append("<strong>").append(escapeHtml(event.getTitle())).append("</strong>");
-                if (event.getStartTime() != null) {
-                    html.append(" - ").append(event.getStartTime().toLocalTime());
-                    if (event.getEndTime() != null) {
-                        html.append(" to ").append(event.getEndTime().toLocalTime());
-                    }
-                }
+                html.append("<strong>").append(escapeHtml(dayEvent.getScheduleEvent().getTitle())).append("</strong>");
+                html.append(" - ").append(dayEvent.getEffectiveStartTime());
+                html.append(" to ").append(dayEvent.getEffectiveEndTime());
                 html.append("</li>");
             }
             html.append("</ul>");

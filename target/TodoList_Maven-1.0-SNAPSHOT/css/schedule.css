@@ -220,6 +220,27 @@ body {
     background: #c0392b;
 }
 
+.btn-cancel {
+    min-width: 80px;
+    height: 40px;
+    background: #95a5a6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+.btn-cancel:hover {
+    background: #7f8c8d;
+}
+
+.btn-submit:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+}
+
 /* --- WEEK NAVIGATION --- */
 .week-navigation {
     display: flex;
@@ -394,6 +415,25 @@ body {
 
 .event-card.recurring .event-title {
     color: #00b894;
+}
+
+/* Cancelled event */
+.event-card.cancelled {
+    opacity: 0.5;
+    border-color: #ccc;
+    background: #f0f0f0;
+}
+
+.event-card.cancelled .event-title {
+    text-decoration: line-through;
+    color: #999;
+}
+
+.event-status {
+    display: block;
+    font-size: 0.8rem;
+    color: #d63031;
+    font-style: italic;
 }
 
 /* --- RESPONSIVE --- */

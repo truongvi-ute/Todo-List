@@ -17,7 +17,6 @@ public class EmailService {
     private static final String API_KEY = System.getenv("BREVO_API_KEY");
     private static final String SENDER_EMAIL = "nguyendoantruongvi11@gmail.com";
     private static final String SENDER_NAME = "TodoList App";
-
     /**
      * Gửi email chứa mã OTP để xác thực tài khoản mới.
      * 

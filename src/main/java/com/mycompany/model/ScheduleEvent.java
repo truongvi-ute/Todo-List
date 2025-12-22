@@ -2,57 +2,68 @@ package com.mycompany.model;
 
 import java.io.Serializable;
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity đại diện cho một schedule event (sự kiện lịch).
+ * Entity đại diện cho một schedule event mẫu/cha.
  * Bảng: schedule_events
- * Kế thừa từ TodoItem với type = EVENT.
- * Hỗ trợ recurring events thông qua RecurrenceRule.
+ * Lưu cấu hình chung của một chuỗi sự kiện.
+ * Không dùng để hiển thị trực tiếp lên lịch - dùng DayEvent thay thế.
  */
 @Entity
 @Table(name = "schedule_events")
-public class ScheduleEvent extends TodoItem implements Serializable { 
+public class ScheduleEvent implements Serializable {
 
-    /** Thời gian bắt đầu event */
-    @Column(name = "start_time", nullable = false)
-    private LocalDateTime startTime;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    /** Thời gian kết thúc event */
-    @Column(name = "end_time", nullable = false)
-    private LocalDateTime endTime;
+    /** Tiêu đề sự kiện */
+    @Column(nullable = false)
+    private String title;
+
+    /** Mô tả chi tiết */
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     /** User sở hữu event này */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    /** 
-     * Quy tắc lặp lại (nếu có).
-     * Null = event đơn lẻ, không lặp.
-     */
-    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JoinColumn(name = "recurrence_rule_id")
-    private RecurrenceRule recurrenceRule;
+    /** Ngày bắt đầu chuỗi sự kiện */
+    @Column(name = "start_date", nullable = false)
+    private LocalDate startDate;
+
+    /** Ngày kết thúc chuỗi sự kiện (bắt buộc) */
+    @Column(name = "end_date", nullable = false)
+    private LocalDate endDate;
 
     /** 
-     * Event gốc (nếu đây là modified instance của recurring event).
-     * Null = event gốc hoặc event đơn lẻ.
+     * Các thứ lặp lại trong tuần.
+     * Format: "MON,WED,FRI" hoặc "1,3,5"
+     * Null hoặc empty = sự kiện đơn lẻ (chỉ diễn ra 1 ngày)
      */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "original_event_id")
-    private ScheduleEvent originalEvent;
+    @Column(name = "recurrence_days")
+    private String recurrenceDays;
 
-    /** Danh sách các modified instances của recurring event này */
-    @OneToMany(mappedBy = "originalEvent", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ScheduleEvent> modifiedInstances = new ArrayList<>();
+    /** Giờ bắt đầu mặc định */
+    @Column(name = "default_start_time", nullable = false)
+    private LocalTime defaultStartTime;
+
+    /** Giờ kết thúc mặc định */
+    @Column(name = "default_end_time", nullable = false)
+    private LocalTime defaultEndTime;
+
+    /** Danh sách các buổi cụ thể của event này */
+    @OneToMany(mappedBy = "scheduleEvent", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<DayEvent> dayEvents = new ArrayList<>();
 
     /** Constructor mặc định cho JPA */
     public ScheduleEvent() {
-        super();
-        this.type = ItemType.EVENT;
     }
 
     /**
@@ -60,45 +71,76 @@ public class ScheduleEvent extends TodoItem implements Serializable {
      * 
      * @param title Tiêu đề event
      * @param description Mô tả
-     * @param startTime Thời gian bắt đầu
-     * @param endTime Thời gian kết thúc
      * @param user User sở hữu
+     * @param startDate Ngày bắt đầu
+     * @param endDate Ngày kết thúc
+     * @param recurrenceDays Các thứ lặp lại (VD: "MON,WED,FRI")
+     * @param defaultStartTime Giờ bắt đầu mặc định
+     * @param defaultEndTime Giờ kết thúc mặc định
      */
-    public ScheduleEvent(String title, String description, LocalDateTime startTime, LocalDateTime endTime, User user) {
-        super(title, description, ItemType.EVENT);
-        this.startTime = startTime;
-        this.endTime = endTime;
+    public ScheduleEvent(String title, String description, User user, 
+                         LocalDate startDate, LocalDate endDate, String recurrenceDays,
+                         LocalTime defaultStartTime, LocalTime defaultEndTime) {
+        this.title = title;
+        this.description = description;
         this.user = user;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.recurrenceDays = recurrenceDays;
+        this.defaultStartTime = defaultStartTime;
+        this.defaultEndTime = defaultEndTime;
     }
 
     // --- GETTERS & SETTERS ---
 
-    public LocalDateTime getStartTime() { return startTime; }
-    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public LocalDateTime getEndTime() { return endTime; }
-    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
 
-    public RecurrenceRule getRecurrenceRule() { return recurrenceRule; }
-    public void setRecurrenceRule(RecurrenceRule recurrenceRule) { this.recurrenceRule = recurrenceRule; }
+    public LocalDate getStartDate() { return startDate; }
+    public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
 
-    public ScheduleEvent getOriginalEvent() { return originalEvent; }
-    public void setOriginalEvent(ScheduleEvent originalEvent) { this.originalEvent = originalEvent; }
+    public LocalDate getEndDate() { return endDate; }
+    public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
 
-    public List<ScheduleEvent> getModifiedInstances() { return modifiedInstances; }
-    public void setModifiedInstances(List<ScheduleEvent> modifiedInstances) { this.modifiedInstances = modifiedInstances; }
-    
+    public String getRecurrenceDays() { return recurrenceDays; }
+    public void setRecurrenceDays(String recurrenceDays) { this.recurrenceDays = recurrenceDays; }
+
+    public LocalTime getDefaultStartTime() { return defaultStartTime; }
+    public void setDefaultStartTime(LocalTime defaultStartTime) { this.defaultStartTime = defaultStartTime; }
+
+    public LocalTime getDefaultEndTime() { return defaultEndTime; }
+    public void setDefaultEndTime(LocalTime defaultEndTime) { this.defaultEndTime = defaultEndTime; }
+
+    public List<DayEvent> getDayEvents() { return dayEvents; }
+    public void setDayEvents(List<DayEvent> dayEvents) { this.dayEvents = dayEvents; }
+
     /**
-     * Helper method để thêm modified instance.
+     * Helper method để thêm DayEvent.
      * Tự động set quan hệ 2 chiều.
      * 
-     * @param exceptionEvent Modified instance cần thêm
+     * @param dayEvent DayEvent cần thêm
      */
-    public void addModifiedInstance(ScheduleEvent exceptionEvent) {
-        modifiedInstances.add(exceptionEvent);
-        exceptionEvent.setOriginalEvent(this);
+    public void addDayEvent(DayEvent dayEvent) {
+        dayEvents.add(dayEvent);
+        dayEvent.setScheduleEvent(this);
+    }
+
+    /**
+     * Helper method để xóa DayEvent.
+     * 
+     * @param dayEvent DayEvent cần xóa
+     */
+    public void removeDayEvent(DayEvent dayEvent) {
+        dayEvents.remove(dayEvent);
+        dayEvent.setScheduleEvent(null);
     }
 }

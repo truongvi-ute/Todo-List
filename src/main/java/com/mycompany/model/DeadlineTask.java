@@ -7,11 +7,26 @@ import java.time.LocalDateTime;
 /**
  * Entity đại diện cho một deadline task.
  * Bảng: deadline_tasks
- * Kế thừa từ TodoItem với type = TASK.
  */
 @Entity
 @Table(name = "deadline_tasks")
-public class DeadlineTask extends TodoItem implements Serializable {
+public class DeadlineTask implements Serializable {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /** Tiêu đề của task */
+    @Column(nullable = false)
+    private String title;
+
+    /** Mô tả chi tiết (có thể null) */
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    /** Thời gian tạo, tự động gán khi persist */
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     /** Thời hạn hoàn thành task */
     @Column(name = "due_date")
@@ -34,8 +49,6 @@ public class DeadlineTask extends TodoItem implements Serializable {
 
     /** Constructor mặc định cho JPA */
     public DeadlineTask() {
-        super();
-        this.type = ItemType.TASK; 
     }
 
     /**
@@ -49,15 +62,51 @@ public class DeadlineTask extends TodoItem implements Serializable {
      * @param user User sở hữu
      */
     public DeadlineTask(String title, String description, LocalDateTime dueDate, Priority priority, User user) {
-        super(title, description, ItemType.TASK);
-        
+        this.title = title;
+        this.description = description;
         this.dueDate = dueDate;
         this.priority = priority;
         this.user = user;
         this.status = Status.IN_PROGRESS;
     }
 
+    /**
+     * JPA Lifecycle callback - tự động gán createdAt trước khi persist.
+     */
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
+
     // --- GETTERS & SETTERS ---
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 
     public LocalDateTime getDueDate() {
         return dueDate;

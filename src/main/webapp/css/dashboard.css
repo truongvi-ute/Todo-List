@@ -216,6 +216,16 @@
     color: var(--text-dark);
 }
 
+.event-item.cancelled {
+    opacity: 0.5;
+    border-left-color: #ccc;
+}
+
+.event-item.cancelled .event-title {
+    text-decoration: line-through;
+    color: var(--text-grey);
+}
+
 /* --- BÊN PHẢI: Calendar Panel --- */
 .calendar-panel {
     background: var(--white);

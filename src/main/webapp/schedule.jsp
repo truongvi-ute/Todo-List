@@ -6,7 +6,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TodoList</title>
+    <title>TodoList - Schedule</title>
     <link rel="icon" type="image/png" href="${pageContext.request.contextPath}/img/logo.png">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/home.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/schedule.css">
@@ -17,47 +17,38 @@
     <main class="main-container">
         <!-- DASHBOARD CONTROLS: 2 FORMS -->
         <div class="dashboard-controls">
-            <!-- LEFT: ADD EXCEPTION -->
+            <!-- LEFT: MANAGE DAY EVENT -->
             <div class="exception-panel">
-                <h3>Add Exception</h3>
-                <form id="exceptionForm" method="post" action="${pageContext.request.contextPath}/schedule">
-                    <input type="hidden" name="action" value="addException">
+                <h3>Manage Day Event</h3>
+                <form id="dayEventForm" method="post" action="${pageContext.request.contextPath}/schedule">
+                    <input type="hidden" name="action" id="dayEventAction" value="cancelDay">
+                    <input type="hidden" name="dayEventId" id="dayEventId" value="">
                     
                     <div class="form-group">
-                        <label>Select Schedule</label>
-                        <select name="eventId" class="form-input" required>
-                            <option value="">-- Select schedule --</option>
-                            <c:forEach var="event" items="${recurringEvents}">
-                                <option value="${event.id}">${event.title}</option>
-                            </c:forEach>
-                        </select>
+                        <label>Selected Event</label>
+                        <input type="text" id="selectedDayEventTitle" class="form-input" readonly placeholder="Click an event on calendar">
                     </div>
                     
                     <div class="form-group">
-                        <label>Exception Date</label>
-                        <input type="date" name="exceptionDate" class="form-input" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Exception Type</label>
+                        <label>Action</label>
                         <div class="radio-group-vertical">
                             <label class="radio-label">
-                                <input type="radio" name="exceptionType" value="skip" checked>
-                                Skip this day
+                                <input type="radio" name="dayAction" value="cancel" checked onchange="updateDayEventAction()">
+                                Cancel this day
                             </label>
                             <label class="radio-label">
-                                <input type="radio" name="exceptionType" value="add">
-                                Add this day
+                                <input type="radio" name="dayAction" value="restore" onchange="updateDayEventAction()">
+                                Restore this day
                             </label>
                             <label class="radio-label">
-                                <input type="radio" name="exceptionType" value="modify">
+                                <input type="radio" name="dayAction" value="override" onchange="updateDayEventAction()">
                                 Change time
                             </label>
                         </div>
                     </div>
                     
                     <!-- Show when "Change time" selected -->
-                    <div class="form-group modify-time-group" style="display: none;">
+                    <div class="form-group override-time-group" style="display: none;">
                         <label>New Time</label>
                         <div class="time-inputs">
                             <input type="time" name="newStartTime" class="form-input">
@@ -66,18 +57,13 @@
                         </div>
                     </div>
                     
-                    <div class="form-group">
-                        <label>Description</label>
-                        <textarea name="exceptionDescription" class="form-textarea" placeholder="Reason for exception..."></textarea>
-                    </div>
-                    
                     <div class="button-group">
-                        <button type="submit" class="btn-submit">Add</button>
+                        <button type="submit" class="btn-submit" id="btnDayEventSubmit" disabled>Apply</button>
                     </div>
                 </form>
             </div>
             
-            <!-- RIGHT: ADD SCHEDULE -->
+            <!-- RIGHT: ADD/EDIT SCHEDULE -->
             <div class="add-schedule-panel">
                 <h3>Add Schedule</h3>
                 <form id="scheduleForm" method="post" action="${pageContext.request.contextPath}/schedule">
@@ -90,50 +76,43 @@
                         <input type="text" name="title" id="eventTitle" class="form-input" placeholder="Event name..." required>
                     </div>
                     
-                    <!-- Row 2: Start time, End time, Repeat -->
+                    <!-- Row 2: Start time, End time -->
                     <div class="form-row">
                         <div class="form-group flex-1">
-                            <label>Start Time (06:00 - 23:00)</label>
-                            <input type="time" name="startTime" id="startTime" class="form-input" min="06:00" max="23:00" required>
+                            <label>Start Time (04:00 - 23:59)</label>
+                            <input type="time" name="startTime" id="startTime" class="form-input" min="04:00" max="23:59" required>
                         </div>
                         <div class="form-group flex-1">
-                            <label>End Time (06:00 - 23:59)</label>
-                            <input type="time" name="endTime" id="endTime" class="form-input" min="06:00" max="23:59" required>
-                        </div>
-                        <div class="form-group flex-1">
-                            <label>Repeat</label>
-                            <select name="frequency" id="frequency" class="form-input">
-                                <option value="NONE">No repeat</option>
-                                <option value="DAILY">Daily</option>
-                                <option value="WEEKLY">Weekly</option>
-                            </select>
+                            <label>End Time (04:00 - 23:59)</label>
+                            <input type="time" name="endTime" id="endTime" class="form-input" min="04:00" max="23:59" required>
                         </div>
                     </div>
                     
-                    <!-- Row 3: Start date, Until date (show when repeat) -->
+                    <!-- Row 3: Start date, End date -->
                     <div class="form-row">
                         <div class="form-group flex-1">
                             <label>Start Date</label>
-                            <input type="date" name="eventDate" id="eventDate" class="form-input" required>
+                            <input type="date" name="startDate" id="startDate" class="form-input" required>
                         </div>
-                        <div class="form-group flex-1 until-date-group" style="display: none;">
-                            <label>Until Date</label>
-                            <input type="date" name="untilDate" id="untilDate" class="form-input">
+                        <div class="form-group flex-1">
+                            <label>End Date</label>
+                            <input type="date" name="endDate" id="endDate" class="form-input" required>
                         </div>
                     </div>
                     
-                    <!-- Days of week (show when WEEKLY) -->
-                    <div class="form-group weekly-days" style="display: none;">
-                        <label>Days of Week</label>
+                    <!-- Days of week for recurrence -->
+                    <div class="form-group">
+                        <label>Repeat on Days (leave empty for single event)</label>
                         <div class="checkbox-group">
-                            <label class="checkbox-label"><input type="checkbox" name="byDays" value="MONDAY"> Mon</label>
-                            <label class="checkbox-label"><input type="checkbox" name="byDays" value="TUESDAY"> Tue</label>
-                            <label class="checkbox-label"><input type="checkbox" name="byDays" value="WEDNESDAY"> Wed</label>
-                            <label class="checkbox-label"><input type="checkbox" name="byDays" value="THURSDAY"> Thu</label>
-                            <label class="checkbox-label"><input type="checkbox" name="byDays" value="FRIDAY"> Fri</label>
-                            <label class="checkbox-label"><input type="checkbox" name="byDays" value="SATURDAY"> Sat</label>
-                            <label class="checkbox-label"><input type="checkbox" name="byDays" value="SUNDAY"> Sun</label>
+                            <label class="checkbox-label"><input type="checkbox" name="days" value="MON"> Mon</label>
+                            <label class="checkbox-label"><input type="checkbox" name="days" value="TUE"> Tue</label>
+                            <label class="checkbox-label"><input type="checkbox" name="days" value="WED"> Wed</label>
+                            <label class="checkbox-label"><input type="checkbox" name="days" value="THU"> Thu</label>
+                            <label class="checkbox-label"><input type="checkbox" name="days" value="FRI"> Fri</label>
+                            <label class="checkbox-label"><input type="checkbox" name="days" value="SAT"> Sat</label>
+                            <label class="checkbox-label"><input type="checkbox" name="days" value="SUN"> Sun</label>
                         </div>
+                        <input type="hidden" name="recurrenceDays" id="recurrenceDays" value="">
                     </div>
                     
                     <!-- Row 4: Description -->
@@ -148,6 +127,7 @@
                     </c:if>
                     
                     <div class="button-group">
+                        <button type="button" class="btn-cancel" id="btnCancel" style="display: none;" onclick="resetScheduleForm()">Cancel</button>
                         <button type="button" class="btn-delete" id="btnDelete" style="display: none;">Delete</button>
                         <button type="submit" class="btn-submit">Save</button>
                     </div>
@@ -186,36 +166,36 @@
                     <div class="day-slots" data-date="${day.date}">
                         <!-- 18 ô từ 6h đến 23h -->
                         <c:forEach var="hour" begin="6" end="23">
-                            <div class="hour-slot" data-hour="${hour}">
-                                <!-- Events sẽ được render ở đây -->
-                            </div>
+                            <div class="hour-slot" data-hour="${hour}"></div>
                         </c:forEach>
                         
-                        <!-- Events overlay -->
+                        <!-- DayEvents overlay -->
                         <c:forEach var="event" items="${day.events}">
-                            <c:set var="startHour" value="${event.startTime.hour}" />
-                            <c:set var="startMin" value="${event.startTime.minute}" />
-                            <c:set var="endHour" value="${event.endTime.hour}" />
-                            <c:set var="endMin" value="${event.endTime.minute}" />
+                            <c:set var="startHour" value="${event.effectiveStartTime.hour}" />
+                            <c:set var="startMin" value="${event.effectiveStartTime.minute}" />
+                            <c:set var="endHour" value="${event.effectiveEndTime.hour}" />
+                            <c:set var="endMin" value="${event.effectiveEndTime.minute}" />
                             <c:set var="topPos" value="${(startHour - 6) * 50 + startMin * 50 / 60}" />
                             <c:set var="height" value="${(endHour - startHour) * 50 + (endMin - startMin) * 50 / 60}" />
                             <c:if test="${height < 25}"><c:set var="height" value="25" /></c:if>
-                            <div class="event-card" 
-                                 data-event-id="${event.id}"
-                                 data-title="${event.title}"
-                                 data-description="${event.description}"
-                                 data-date="${day.date}"
-                                 data-original-date="${event.startTime.toLocalDate()}"
+                            <div class="event-card ${event.status == 'CANCELLED' ? 'cancelled' : ''}" 
+                                 data-day-event-id="${event.id}"
+                                 data-schedule-event-id="${event.scheduleEvent.id}"
+                                 data-title="${event.scheduleEvent.title}"
+                                 data-description="${event.scheduleEvent.description}"
+                                 data-specific-date="${event.specificDate}"
                                  data-start-hour="${startHour}"
                                  data-start-minute="${startMin}"
                                  data-end-hour="${endHour}"
                                  data-end-minute="${endMin}"
-                                 data-frequency="${event.recurrenceRule != null ? event.recurrenceRule.frequency : 'NONE'}"
-                                 data-until-date="${event.recurrenceRule != null ? event.recurrenceRule.untilDate : ''}"
+                                 data-status="${event.status}"
+                                 data-start-date="${event.scheduleEvent.startDate}"
+                                 data-end-date="${event.scheduleEvent.endDate}"
+                                 data-recurrence-days="${event.scheduleEvent.recurrenceDays}"
                                  style="top: ${topPos}px; height: ${height}px;">
-                                <span class="event-title">${event.title}</span>
-                                <c:if test="${not empty event.description}">
-                                    <span class="event-desc">${event.description}</span>
+                                <span class="event-title">${event.scheduleEvent.title}</span>
+                                <c:if test="${event.status == 'CANCELLED'}">
+                                    <span class="event-status">(Cancelled)</span>
                                 </c:if>
                             </div>
                         </c:forEach>
@@ -226,117 +206,144 @@
     </main>
     
     <script>
-        // Toggle hiển thị options khi chọn loại ngoại lệ
-        document.querySelectorAll('input[name="exceptionType"]').forEach(radio => {
-            radio.addEventListener('change', function() {
-                const modifyGroup = document.querySelector('.modify-time-group');
-                modifyGroup.style.display = this.value === 'modify' ? 'block' : 'none';
-            });
-        });
-        
-        // Toggle hiển thị recurrence options
-        document.getElementById('frequency').addEventListener('change', function() {
-            const untilDateGroup = document.querySelector('.until-date-group');
-            const weeklyDays = document.querySelector('.weekly-days');
+        // Update recurrenceDays hidden field before submit
+        document.getElementById('scheduleForm').addEventListener('submit', function(e) {
+            const checkboxes = document.querySelectorAll('input[name="days"]:checked');
+            const days = Array.from(checkboxes).map(cb => cb.value);
+            document.getElementById('recurrenceDays').value = days.join(',');
             
-            if (this.value === 'NONE') {
-                untilDateGroup.style.display = 'none';
-                weeklyDays.style.display = 'none';
-            } else {
-                untilDateGroup.style.display = 'block';
-                weeklyDays.style.display = this.value === 'WEEKLY' ? 'block' : 'none';
+            // Validate dates
+            const startDate = new Date(document.getElementById('startDate').value);
+            const endDate = new Date(document.getElementById('endDate').value);
+            
+            if (endDate <= startDate) {
+                e.preventDefault();
+                alert('End date must be after start date!');
+                return false;
+            }
+            
+            // Check date range <= 1 year
+            const oneYearLater = new Date(startDate);
+            oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+            if (endDate > oneYearLater) {
+                e.preventDefault();
+                alert('Date range cannot exceed 1 year!');
+                return false;
+            }
+            
+            // Validate times
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            
+            if (endTime <= startTime) {
+                e.preventDefault();
+                alert('End time must be after start time!');
+                return false;
             }
         });
         
-        var isEditing = false;
+        // Toggle hiển thị override time options
+        function updateDayEventAction() {
+            const selectedAction = document.querySelector('input[name="dayAction"]:checked').value;
+            const overrideGroup = document.querySelector('.override-time-group');
+            const actionInput = document.getElementById('dayEventAction');
+            
+            overrideGroup.style.display = selectedAction === 'override' ? 'block' : 'none';
+            
+            if (selectedAction === 'cancel') {
+                actionInput.value = 'cancelDay';
+            } else if (selectedAction === 'restore') {
+                actionInput.value = 'restoreDay';
+            } else {
+                actionInput.value = 'overrideTime';
+            }
+        }
+        
+        var isEditingSchedule = false;
+        var selectedDayEventId = null;
         
         // Format time to HH:MM
         function formatTime(hour, minute) {
             return String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0');
         }
         
-        // Click vào event để edit
+        // Click vào event card
         document.querySelectorAll('.event-card').forEach(card => {
-            card.addEventListener('click', function() {
-                isEditing = true;
+            card.addEventListener('click', function(e) {
+                e.stopPropagation();
                 
-                // Get data from event card
-                const eventId = this.dataset.eventId;
-                const title = this.dataset.title;
-                const description = this.dataset.description || '';
-                const originalDate = this.dataset.originalDate;
-                const startHour = parseInt(this.dataset.startHour);
-                const startMinute = parseInt(this.dataset.startMinute);
-                const endHour = parseInt(this.dataset.endHour);
-                const endMinute = parseInt(this.dataset.endMinute);
-                const frequency = this.dataset.frequency || 'NONE';
-                const untilDate = this.dataset.untilDate || '';
+                // Populate Day Event form (left panel)
+                selectedDayEventId = this.dataset.dayEventId;
+                document.getElementById('dayEventId').value = selectedDayEventId;
+                document.getElementById('selectedDayEventTitle').value = 
+                    this.dataset.title + ' (' + this.dataset.specificDate + ')';
+                document.getElementById('btnDayEventSubmit').disabled = false;
                 
-                // Populate form
-                document.getElementById('editEventId').value = eventId;
-                document.getElementById('eventTitle').value = title;
-                document.getElementById('eventDescription').value = description;
-                document.getElementById('eventDate').value = originalDate;
-                document.getElementById('startTime').value = formatTime(startHour, startMinute);
-                document.getElementById('endTime').value = formatTime(endHour, endMinute);
-                
-                // Set frequency and show/hide related fields
-                document.getElementById('frequency').value = frequency;
-                const untilDateGroup = document.querySelector('.until-date-group');
-                const weeklyDays = document.querySelector('.weekly-days');
-                
-                if (frequency !== 'NONE') {
-                    untilDateGroup.style.display = 'block';
-                    if (untilDate) {
-                        document.getElementById('untilDate').value = untilDate;
-                    }
-                    weeklyDays.style.display = frequency === 'WEEKLY' ? 'block' : 'none';
+                // Set appropriate radio based on status
+                if (this.dataset.status === 'CANCELLED') {
+                    document.querySelector('input[name="dayAction"][value="restore"]').checked = true;
                 } else {
-                    untilDateGroup.style.display = 'none';
-                    weeklyDays.style.display = 'none';
+                    document.querySelector('input[name="dayAction"][value="cancel"]').checked = true;
                 }
+                updateDayEventAction();
+                
+                // Populate Schedule form (right panel) for editing parent
+                isEditingSchedule = true;
+                document.getElementById('editEventId').value = this.dataset.scheduleEventId;
+                document.getElementById('eventTitle').value = this.dataset.title;
+                document.getElementById('eventDescription').value = this.dataset.description || '';
+                document.getElementById('startDate').value = this.dataset.startDate;
+                document.getElementById('endDate').value = this.dataset.endDate;
+                document.getElementById('startTime').value = formatTime(
+                    parseInt(this.dataset.startHour), parseInt(this.dataset.startMinute));
+                document.getElementById('endTime').value = formatTime(
+                    parseInt(this.dataset.endHour), parseInt(this.dataset.endMinute));
+                
+                // Set recurrence days checkboxes
+                const recurrenceDays = this.dataset.recurrenceDays || '';
+                document.querySelectorAll('input[name="days"]').forEach(cb => {
+                    cb.checked = recurrenceDays.includes(cb.value);
+                });
                 
                 // Update form state
                 document.querySelector('#scheduleForm input[name="action"]').value = 'edit';
                 document.getElementById('btnDelete').style.display = 'inline-block';
+                document.getElementById('btnCancel').style.display = 'inline-block';
                 document.querySelector('.add-schedule-panel h3').textContent = 'Edit Schedule';
-                
-                // Scroll to form
-                document.querySelector('.add-schedule-panel').scrollIntoView({ behavior: 'smooth' });
             });
         });
         
-        // Reset form to add mode
-        function resetForm() {
-            isEditing = false;
+        // Reset schedule form to add mode
+        function resetScheduleForm() {
+            isEditingSchedule = false;
             document.getElementById('editEventId').value = '';
             document.getElementById('btnDelete').style.display = 'none';
+            document.getElementById('btnCancel').style.display = 'none';
             document.querySelector('#scheduleForm input[name="action"]').value = 'add';
             document.querySelector('.add-schedule-panel h3').textContent = 'Add Schedule';
             document.getElementById('scheduleForm').reset();
         }
         
-        // Click outside form để cancel edit
+        // Click outside to cancel edit
         document.addEventListener('click', function(e) {
-            if (!isEditing) return;
+            if (!isEditingSchedule) return;
             
-            const form = document.getElementById('scheduleForm');
-            const panel = document.querySelector('.add-schedule-panel');
+            const schedulePanel = document.querySelector('.add-schedule-panel');
             let clickedOnEvent = false;
             
             document.querySelectorAll('.event-card').forEach(card => {
                 if (card.contains(e.target)) clickedOnEvent = true;
             });
             
-            if (!panel.contains(e.target) && !clickedOnEvent) {
-                resetForm();
+            if (!schedulePanel.contains(e.target) && !clickedOnEvent) {
+                resetScheduleForm();
             }
         });
         
         // Xử lý nút Xóa
         document.getElementById('btnDelete').addEventListener('click', function() {
             const eventId = document.getElementById('editEventId').value;
-            if (eventId) {
+            if (eventId && confirm('Delete this schedule and all its events?')) {
                 document.querySelector('#scheduleForm input[name="action"]').value = 'delete';
                 document.getElementById('scheduleForm').submit();
             }

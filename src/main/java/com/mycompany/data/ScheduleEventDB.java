@@ -1,23 +1,27 @@
 package com.mycompany.data;
 
-import com.mycompany.model.RecurrenceRule;
+import com.mycompany.model.DayEvent;
+import com.mycompany.model.DayEventStatus;
 import com.mycompany.model.ScheduleEvent;
 import com.mycompany.model.User;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Data Access Object (DAO) cho entity ScheduleEvent.
  * Cung cấp các phương thức CRUD và truy vấn cho schedule events.
- * Hỗ trợ cả events đơn lẻ và recurring events.
  */
 public class ScheduleEventDB {
 
     /**
-     * Thêm event mới vào database.
+     * Thêm event mới vào database và tự động generate các DayEvents.
      * 
      * @param event ScheduleEvent object cần lưu
      */
@@ -26,6 +30,10 @@ public class ScheduleEventDB {
         try {
             em.getTransaction().begin();
             em.persist(event);
+            
+            // Generate DayEvents dựa trên recurrenceDays
+            generateDayEvents(event, em);
+            
             em.getTransaction().commit();
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
@@ -54,14 +62,30 @@ public class ScheduleEventDB {
 
     /**
      * Cập nhật thông tin event.
+     * Nếu thay đổi recurrenceDays hoặc ngày, sẽ regenerate DayEvents.
      * 
      * @param event ScheduleEvent object đã được chỉnh sửa
+     * @param regenerateDayEvents true nếu cần tạo lại DayEvents
      */
-    public static void update(ScheduleEvent event) {
+    public static void update(ScheduleEvent event, boolean regenerateDayEvents) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            em.merge(event);
+            
+            if (regenerateDayEvents) {
+                // Xóa tất cả DayEvents cũ
+                String deleteJpql = "DELETE FROM DayEvent d WHERE d.scheduleEvent.id = :eventId";
+                em.createQuery(deleteJpql).setParameter("eventId", event.getId()).executeUpdate();
+                
+                // Merge event trước
+                event = em.merge(event);
+                
+                // Generate lại DayEvents
+                generateDayEvents(event, em);
+            } else {
+                em.merge(event);
+            }
+            
             em.getTransaction().commit();
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
@@ -74,8 +98,17 @@ public class ScheduleEventDB {
     }
 
     /**
+     * Cập nhật thông tin event (không regenerate DayEvents).
+     * 
+     * @param event ScheduleEvent object đã được chỉnh sửa
+     */
+    public static void update(ScheduleEvent event) {
+        update(event, false);
+    }
+
+    /**
      * Xóa event khỏi database.
-     * Cascade sẽ tự động xóa RecurrenceRule và modified instances liên quan.
+     * Xóa DayEvents trước, sau đó xóa ScheduleEvent.
      * 
      * @param id ID của event cần xóa
      */
@@ -83,6 +116,12 @@ public class ScheduleEventDB {
         EntityManager em = JPAUtil.getEntityManager();
         try {
             em.getTransaction().begin();
+            
+            // Xóa tất cả DayEvents trước
+            String deleteChildrenJpql = "DELETE FROM DayEvent d WHERE d.scheduleEvent.id = :eventId";
+            em.createQuery(deleteChildrenJpql).setParameter("eventId", id).executeUpdate();
+            
+            // Sau đó xóa ScheduleEvent
             ScheduleEvent event = em.find(ScheduleEvent.class, id);
             if (event != null) {
                 em.remove(event);
@@ -99,25 +138,18 @@ public class ScheduleEventDB {
     }
 
     /**
-     * Lấy danh sách events KHÔNG lặp lại của user trong khoảng thời gian.
-     * Sắp xếp theo thời gian bắt đầu.
+     * Lấy tất cả ScheduleEvents của user.
+     * Dùng để hiển thị trong dropdown quản lý.
      * 
      * @param user User sở hữu events
-     * @param startDate Ngày bắt đầu (inclusive)
-     * @param endDate Ngày kết thúc (exclusive)
-     * @return Danh sách ScheduleEvent không có recurrence rule
+     * @return Danh sách ScheduleEvents
      */
-    public static List<ScheduleEvent> getEventsByUserAndDateRange(User user, LocalDateTime startDate, LocalDateTime endDate) {
+    public static List<ScheduleEvent> getAllByUser(User user) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
-            String jpql = "SELECT e FROM ScheduleEvent e WHERE e.user = :user " +
-                          "AND e.startTime >= :startDate AND e.startTime < :endDate " +
-                          "AND e.recurrenceRule IS NULL " +
-                          "ORDER BY e.startTime ASC";
+            String jpql = "SELECT e FROM ScheduleEvent e WHERE e.user = :user ORDER BY e.title ASC";
             TypedQuery<ScheduleEvent> query = em.createQuery(jpql, ScheduleEvent.class);
             query.setParameter("user", user);
-            query.setParameter("startDate", startDate);
-            query.setParameter("endDate", endDate);
             return query.getResultList();
         } finally {
             em.close();
@@ -125,18 +157,16 @@ public class ScheduleEventDB {
     }
 
     /**
-     * Lấy tất cả recurring events của user.
-     * Dùng để hiển thị trong dropdown quản lý ngoại lệ.
+     * Lấy ScheduleEvents có recurring (có recurrenceDays).
      * 
      * @param user User sở hữu events
-     * @return Danh sách recurring events (có recurrence rule, không phải modified instance)
+     * @return Danh sách recurring ScheduleEvents
      */
     public static List<ScheduleEvent> getRecurringEventsByUser(User user) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
             String jpql = "SELECT e FROM ScheduleEvent e WHERE e.user = :user " +
-                          "AND e.recurrenceRule IS NOT NULL " +
-                          "AND e.originalEvent IS NULL " +
+                          "AND e.recurrenceDays IS NOT NULL AND e.recurrenceDays != '' " +
                           "ORDER BY e.title ASC";
             TypedQuery<ScheduleEvent> query = em.createQuery(jpql, ScheduleEvent.class);
             query.setParameter("user", user);
@@ -147,165 +177,130 @@ public class ScheduleEventDB {
     }
 
     /**
-     * Lấy recurring events có thể xuất hiện trong khoảng thời gian.
-     * Điều kiện: startTime <= endDate AND (untilDate >= startDate OR untilDate IS NULL)
+     * Generate các DayEvent dựa trên cấu hình của ScheduleEvent.
      * 
-     * @param user User sở hữu events
-     * @param startDate Ngày bắt đầu khoảng thời gian
-     * @param endDate Ngày kết thúc khoảng thời gian
-     * @return Danh sách recurring events cần expand
+     * @param event ScheduleEvent cha
+     * @param em EntityManager đang active
      */
-    public static List<ScheduleEvent> getRecurringEventsInRange(User user, LocalDate startDate, LocalDate endDate) {
-        EntityManager em = JPAUtil.getEntityManager();
-        try {
-            String jpql = "SELECT e FROM ScheduleEvent e " +
-                          "LEFT JOIN FETCH e.recurrenceRule r " +
-                          "WHERE e.user = :user " +
-                          "AND e.recurrenceRule IS NOT NULL " +
-                          "AND e.originalEvent IS NULL " +
-                          "AND e.startTime <= :endDateTime " +
-                          "AND (r.untilDate IS NULL OR r.untilDate >= :startDate)";
-            TypedQuery<ScheduleEvent> query = em.createQuery(jpql, ScheduleEvent.class);
-            query.setParameter("user", user);
-            query.setParameter("startDate", startDate);
-            query.setParameter("endDateTime", endDate.plusDays(1).atStartOfDay());
-            return query.getResultList();
-        } finally {
-            em.close();
+    private static void generateDayEvents(ScheduleEvent event, EntityManager em) {
+        LocalDate startDate = event.getStartDate();
+        LocalDate endDate = event.getEndDate();
+        String recurrenceDays = event.getRecurrenceDays();
+        
+        // Parse recurrenceDays thành list DayOfWeek
+        List<DayOfWeek> targetDays = parseRecurrenceDays(recurrenceDays);
+        
+        // Nếu không có recurrenceDays, tạo 1 DayEvent duy nhất cho startDate
+        if (targetDays.isEmpty()) {
+            DayEvent dayEvent = new DayEvent(event, startDate);
+            em.persist(dayEvent);
+            return;
+        }
+        
+        // Duyệt từ startDate đến endDate, tạo DayEvent cho các ngày khớp
+        LocalDate current = startDate;
+        while (!current.isAfter(endDate)) {
+            if (targetDays.contains(current.getDayOfWeek())) {
+                DayEvent dayEvent = new DayEvent(event, current);
+                em.persist(dayEvent);
+            }
+            current = current.plusDays(1);
         }
     }
 
     /**
-     * Thêm ngày ngoại lệ vào RecurrenceRule.
-     * Event sẽ không xuất hiện vào ngày này.
+     * Parse chuỗi recurrenceDays thành list DayOfWeek.
+     * Hỗ trợ format: "MON,WED,FRI" hoặc "1,3,5" (1=Monday)
      * 
-     * @param eventId ID của recurring event
-     * @param excludedDate Ngày cần loại trừ
+     * @param recurrenceDays Chuỗi các ngày
+     * @return List DayOfWeek
      */
-    public static void addExcludedDate(Long eventId, LocalDate excludedDate) {
-        EntityManager em = JPAUtil.getEntityManager();
-        try {
-            em.getTransaction().begin();
-            ScheduleEvent event = em.find(ScheduleEvent.class, eventId);
-            if (event != null && event.getRecurrenceRule() != null) {
-                RecurrenceRule rule = event.getRecurrenceRule();
-                if (!rule.getExcludedDates().contains(excludedDate)) {
-                    rule.getExcludedDates().add(excludedDate);
-                    em.merge(rule);
+    private static List<DayOfWeek> parseRecurrenceDays(String recurrenceDays) {
+        if (recurrenceDays == null || recurrenceDays.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        List<DayOfWeek> result = new ArrayList<>();
+        
+        for (String day : recurrenceDays.split(",")) {
+            day = day.trim().toUpperCase();
+            if (day.isEmpty()) continue;
+            
+            try {
+                // Thử parse số trước (1-7, 1=Monday)
+                int dayNum = Integer.parseInt(day);
+                result.add(DayOfWeek.of(dayNum));
+            } catch (NumberFormatException e) {
+                // Parse tên ngày viết tắt
+                switch (day) {
+                    case "MON": result.add(DayOfWeek.MONDAY); break;
+                    case "TUE": result.add(DayOfWeek.TUESDAY); break;
+                    case "WED": result.add(DayOfWeek.WEDNESDAY); break;
+                    case "THU": result.add(DayOfWeek.THURSDAY); break;
+                    case "FRI": result.add(DayOfWeek.FRIDAY); break;
+                    case "SAT": result.add(DayOfWeek.SATURDAY); break;
+                    case "SUN": result.add(DayOfWeek.SUNDAY); break;
+                    default:
+                        // Thử parse tên đầy đủ
+                        try {
+                            result.add(DayOfWeek.valueOf(day));
+                        } catch (IllegalArgumentException ex) {
+                            System.out.println("Invalid day: " + day);
+                        }
                 }
             }
-            em.getTransaction().commit();
-        } catch (Exception e) {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-            e.printStackTrace();
-        } finally {
-            em.close();
         }
+        
+        return result;
     }
 
     /**
-     * Tạo modified instance cho một ngày cụ thể của recurring event.
-     * Dùng khi muốn thay đổi thời gian của một occurrence cụ thể.
-     * Ngày gốc sẽ được thêm vào excluded dates.
+     * Kiểm tra xem có DayEvent nào trùng giờ không trong ngày cụ thể.
      * 
-     * @param originalEventId ID của recurring event gốc
-     * @param date Ngày của occurrence cần modify
-     * @param newStartTime Thời gian bắt đầu mới
-     * @param newEndTime Thời gian kết thúc mới
+     * @param user User sở hữu events
+     * @param date Ngày cần kiểm tra
+     * @param startTime Giờ bắt đầu
+     * @param endTime Giờ kết thúc
+     * @param excludeDayEventId ID của DayEvent cần loại trừ (khi edit), null nếu thêm mới
+     * @return true nếu có trùng giờ
      */
-    public static void createModifiedInstance(Long originalEventId, LocalDate date, 
-            LocalDateTime newStartTime, LocalDateTime newEndTime) {
+    public static boolean hasOverlappingEvent(User user, LocalDate date, 
+            LocalTime startTime, LocalTime endTime, Long excludeDayEventId) {
         EntityManager em = JPAUtil.getEntityManager();
         try {
-            em.getTransaction().begin();
-            ScheduleEvent originalEvent = em.find(ScheduleEvent.class, originalEventId);
-            if (originalEvent != null && originalEvent.getRecurrenceRule() != null) {
-                // Tạo instance mới với thời gian đã thay đổi
-                ScheduleEvent modifiedInstance = new ScheduleEvent(
-                    originalEvent.getTitle(),
-                    originalEvent.getDescription(),
-                    newStartTime,
-                    newEndTime,
-                    originalEvent.getUser()
-                );
-                modifiedInstance.setOriginalEvent(originalEvent);
-                em.persist(modifiedInstance);
+            // Lấy tất cả DayEvents ACTIVE trong ngày đó của user
+            String jpql = "SELECT d FROM DayEvent d " +
+                          "WHERE d.scheduleEvent.user = :user " +
+                          "AND d.specificDate = :date " +
+                          "AND d.status = :status";
+            
+            if (excludeDayEventId != null) {
+                jpql += " AND d.id != :excludeId";
+            }
+            
+            TypedQuery<DayEvent> query = em.createQuery(jpql, DayEvent.class);
+            query.setParameter("user", user);
+            query.setParameter("date", date);
+            query.setParameter("status", DayEventStatus.ACTIVE);
+            
+            if (excludeDayEventId != null) {
+                query.setParameter("excludeId", excludeDayEventId);
+            }
+            
+            List<DayEvent> existingEvents = query.getResultList();
+            
+            // Kiểm tra overlap với từng event
+            for (DayEvent existing : existingEvents) {
+                LocalTime existingStart = existing.getEffectiveStartTime();
+                LocalTime existingEnd = existing.getEffectiveEndTime();
                 
-                // Thêm ngày gốc vào excluded dates để không hiển thị occurrence gốc
-                RecurrenceRule rule = originalEvent.getRecurrenceRule();
-                if (!rule.getExcludedDates().contains(date)) {
-                    rule.getExcludedDates().add(date);
-                    em.merge(rule);
+                // Overlap: newStart < existingEnd AND newEnd > existingStart
+                if (startTime.isBefore(existingEnd) && endTime.isAfter(existingStart)) {
+                    return true;
                 }
             }
-            em.getTransaction().commit();
-        } catch (Exception e) {
-            if (em.getTransaction().isActive()) {
-                em.getTransaction().rollback();
-            }
-            e.printStackTrace();
-        } finally {
-            em.close();
-        }
-    }
-
-    /**
-     * Lấy các modified instances của một recurring event trong khoảng thời gian.
-     * 
-     * @param originalEventId ID của recurring event gốc
-     * @param startDate Ngày bắt đầu
-     * @param endDate Ngày kết thúc
-     * @return Danh sách modified instances
-     */
-    public static List<ScheduleEvent> getModifiedInstances(Long originalEventId, LocalDateTime startDate, LocalDateTime endDate) {
-        EntityManager em = JPAUtil.getEntityManager();
-        try {
-            String jpql = "SELECT e FROM ScheduleEvent e WHERE e.originalEvent.id = :originalId " +
-                          "AND e.startTime >= :startDate AND e.startTime < :endDate";
-            TypedQuery<ScheduleEvent> query = em.createQuery(jpql, ScheduleEvent.class);
-            query.setParameter("originalId", originalEventId);
-            query.setParameter("startDate", startDate);
-            query.setParameter("endDate", endDate);
-            return query.getResultList();
-        } finally {
-            em.close();
-        }
-    }
-    
-    /**
-     * Kiểm tra xem có event nào trùng giờ không.
-     * Chỉ kiểm tra events không lặp lại.
-     * 
-     * @param user User sở hữu events
-     * @param startTime Thời gian bắt đầu cần kiểm tra
-     * @param endTime Thời gian kết thúc cần kiểm tra
-     * @param excludeEventId ID của event cần loại trừ (khi edit), null nếu thêm mới
-     * @return true nếu có event trùng giờ, false nếu không
-     */
-    public static boolean hasOverlappingEvent(User user, LocalDateTime startTime, LocalDateTime endTime, Long excludeEventId) {
-        EntityManager em = JPAUtil.getEntityManager();
-        try {
-            // Overlap condition: newStart < existingEnd AND newEnd > existingStart
-            String jpql = "SELECT COUNT(e) FROM ScheduleEvent e WHERE e.user = :user " +
-                          "AND e.startTime < :endTime AND e.endTime > :startTime " +
-                          "AND e.recurrenceRule IS NULL";
             
-            if (excludeEventId != null) {
-                jpql += " AND e.id != :excludeId";
-            }
-            
-            TypedQuery<Long> query = em.createQuery(jpql, Long.class);
-            query.setParameter("user", user);
-            query.setParameter("startTime", startTime);
-            query.setParameter("endTime", endTime);
-            
-            if (excludeEventId != null) {
-                query.setParameter("excludeId", excludeEventId);
-            }
-            
-            return query.getSingleResult() > 0;
+            return false;
         } finally {
             em.close();
         }

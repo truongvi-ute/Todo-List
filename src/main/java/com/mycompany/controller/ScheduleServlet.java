@@ -1,8 +1,9 @@
 package com.mycompany.controller;
 
+import com.mycompany.data.DayEventDB;
 import com.mycompany.data.ScheduleEventDB;
-import com.mycompany.model.FrequencyType;
-import com.mycompany.model.RecurrenceRule;
+import com.mycompany.model.DayEvent;
+import com.mycompany.model.DayEventStatus;
 import com.mycompany.model.ScheduleEvent;
 import com.mycompany.model.User;
 import jakarta.servlet.ServletException;
@@ -14,12 +15,10 @@ import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,14 +27,13 @@ import java.util.stream.Collectors;
 /**
  * Servlet quản lý Schedule Events.
  * URL: /schedule
- * Hiển thị events theo tuần, hỗ trợ recurring events và exceptions.
+ * Hiển thị events theo tuần, hỗ trợ CRUD cho ScheduleEvent và DayEvent.
  */
 @WebServlet(urlPatterns = {"/schedule"})
 public class ScheduleServlet extends HttpServlet {
 
     /**
      * Xử lý GET request - Hiển thị lịch theo tuần.
-     * Bao gồm cả events đơn lẻ và recurring events đã expand.
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -69,43 +67,31 @@ public class ScheduleServlet extends HttpServlet {
         LocalDate today = LocalDate.now();
         LocalDate viewDate = today.plusWeeks(weekOffset);
         LocalDate monday = viewDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        LocalDate sunday = monday.plusDays(6);
         
         // Tạo danh sách 7 ngày trong tuần
         List<Map<String, Object>> weekDays = buildWeekDays(monday);
-        LocalDate sunday = monday.plusDays(6);
         
-        // Query events từ database
-        LocalDateTime startDateTime = monday.atStartOfDay();
-        LocalDateTime endDateTime = sunday.plusDays(1).atStartOfDay();
-        
-        // Lấy events không lặp
-        List<ScheduleEvent> normalEvents = ScheduleEventDB.getEventsByUserAndDateRange(user, startDateTime, endDateTime);
-        
-        // Lấy recurring events và expand ra các ngày trong tuần
-        List<ScheduleEvent> recurringEvents = ScheduleEventDB.getRecurringEventsInRange(user, monday, sunday);
-        List<ScheduleEvent> expandedEvents = expandRecurringEvents(recurringEvents, monday, sunday);
-        
-        // Gộp tất cả events
-        List<ScheduleEvent> allEvents = new ArrayList<>();
-        allEvents.addAll(normalEvents);
-        allEvents.addAll(expandedEvents);
+        // Query DayEvents từ database
+        List<DayEvent> allDayEvents = DayEventDB.getByUserAndDateRange(user, monday, sunday);
         
         // Gán events vào đúng ngày
-        Map<LocalDate, List<ScheduleEvent>> eventsByDate = allEvents.stream()
-                .collect(Collectors.groupingBy(e -> e.getStartTime().toLocalDate()));
+        Map<LocalDate, List<DayEvent>> eventsByDate = allDayEvents.stream()
+                .collect(Collectors.groupingBy(DayEvent::getSpecificDate));
         
         for (Map<String, Object> day : weekDays) {
             LocalDate date = (LocalDate) day.get("date");
-            List<ScheduleEvent> dayEvents = eventsByDate.get(date);
+            List<DayEvent> dayEvents = eventsByDate.get(date);
             if (dayEvents != null) {
-                dayEvents.sort((e1, e2) -> e1.getStartTime().compareTo(e2.getStartTime()));
+                // Sort theo giờ bắt đầu
+                dayEvents.sort((e1, e2) -> e1.getEffectiveStartTime().compareTo(e2.getEffectiveStartTime()));
                 day.put("events", dayEvents);
             }
         }
         
-        // Lấy recurring events cho dropdown quản lý ngoại lệ
-        List<ScheduleEvent> recurringForDropdown = ScheduleEventDB.getRecurringEventsByUser(user);
-        request.setAttribute("recurringEvents", recurringForDropdown);
+        // Lấy tất cả ScheduleEvents cho dropdown quản lý
+        List<ScheduleEvent> allScheduleEvents = ScheduleEventDB.getAllByUser(user);
+        request.setAttribute("scheduleEvents", allScheduleEvents);
         
         // Set attributes cho JSP
         request.setAttribute("weekDays", weekDays);
@@ -117,8 +103,8 @@ public class ScheduleServlet extends HttpServlet {
     }
 
     /**
-     * Xử lý POST request - CRUD operations cho events.
-     * Actions: add, edit, delete, addException
+     * Xử lý POST request - CRUD operations.
+     * Actions: add, edit, delete, cancelDay, restoreDay, overrideTime
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -151,8 +137,14 @@ public class ScheduleServlet extends HttpServlet {
             case "delete":
                 handleDeleteEvent(request, user);
                 break;
-            case "addException":
-                handleAddException(request, user);
+            case "cancelDay":
+                handleCancelDay(request, user);
+                break;
+            case "restoreDay":
+                handleRestoreDay(request, user);
+                break;
+            case "overrideTime":
+                handleOverrideTime(request, user);
                 break;
             default:
                 break;
@@ -168,9 +160,6 @@ public class ScheduleServlet extends HttpServlet {
 
     /**
      * Tạo danh sách 7 ngày trong tuần với metadata.
-     * 
-     * @param monday Ngày thứ Hai của tuần
-     * @return List of Map chứa dayName, dateString, date, events
      */
     private List<Map<String, Object>> buildWeekDays(LocalDate monday) {
         List<Map<String, Object>> days = new ArrayList<>();
@@ -191,99 +180,90 @@ public class ScheduleServlet extends HttpServlet {
     }
 
     /**
-     * Xử lý thêm event mới.
-     * Hỗ trợ recurring events với frequency: DAILY, WEEKLY, MONTHLY, YEARLY.
-     * Validate: thời gian 6h-23h, không trùng giờ với event khác.
-     * 
-     * @return true nếu thành công, false nếu có lỗi
+     * Xử lý thêm ScheduleEvent mới.
+     * Tự động generate DayEvents dựa trên recurrenceDays.
      */
     private boolean handleAddEvent(HttpServletRequest request, User user) {
         String title = request.getParameter("title");
-        String eventDateStr = request.getParameter("eventDate");
+        String startDateStr = request.getParameter("startDate");
+        String endDateStr = request.getParameter("endDate");
         String startTimeStr = request.getParameter("startTime");
         String endTimeStr = request.getParameter("endTime");
-        String frequencyStr = request.getParameter("frequency");
+        String recurrenceDays = request.getParameter("recurrenceDays");
         String description = request.getParameter("description");
         
-        if (title == null || title.trim().isEmpty() || eventDateStr == null || eventDateStr.isEmpty() ||
-            startTimeStr == null || endTimeStr == null) {
+        if (title == null || title.trim().isEmpty() || 
+            startDateStr == null || startDateStr.isEmpty() ||
+            endDateStr == null || endDateStr.isEmpty() ||
+            startTimeStr == null || startTimeStr.isEmpty() ||
+            endTimeStr == null || endTimeStr.isEmpty()) {
+            request.setAttribute("errorMessage", "Please fill all required fields!");
             return false;
         }
         
         try {
-            LocalDate eventDate = LocalDate.parse(eventDateStr.trim());
+            LocalDate startDate = LocalDate.parse(startDateStr.trim());
+            LocalDate endDate = LocalDate.parse(endDateStr.trim());
             LocalTime startTime = LocalTime.parse(startTimeStr);
             LocalTime endTime = LocalTime.parse(endTimeStr);
             
-            // Validate năm hợp lệ
-            if (eventDate.getYear() < 1900 || eventDate.getYear() > 2100) {
+            // Validate ngày
+            if (!endDate.isAfter(startDate)) {
+                request.setAttribute("errorMessage", "End date must be after start date!");
                 return false;
             }
             
-            // Validate thời gian trong khoảng 6h-23h
-            if (startTime.getHour() < 6 || startTime.getHour() > 23) {
-                request.setAttribute("errorMessage", "Start time must be between 06:00 and 23:00!");
-                return false;
-            }
-            if (endTime.getHour() < 6 || (endTime.getHour() == 0 && endTime.getMinute() == 0)) {
-                request.setAttribute("errorMessage", "End time must be between 06:00 and 23:59!");
+            // Validate khoảng cách không quá 1 năm (365 ngày)
+            if (startDate.plusYears(1).isBefore(endDate)) {
+                request.setAttribute("errorMessage", "Date range cannot exceed 1 year!");
                 return false;
             }
             
-            LocalDateTime startDateTime = eventDate.atTime(startTime);
-            LocalDateTime endDateTime = eventDate.atTime(endTime);
+            // Validate thời gian trong khoảng 04:00 - 23:59
+            LocalTime minTime = LocalTime.of(4, 0);
+            LocalTime maxTime = LocalTime.of(23, 59);
             
-            // Kiểm tra trùng giờ (chỉ cho event không lặp)
-            if (frequencyStr == null || "NONE".equals(frequencyStr)) {
-                if (ScheduleEventDB.hasOverlappingEvent(user, startDateTime, endDateTime, null)) {
-                    request.setAttribute("errorMessage", "Time slot already occupied by another event!");
-                    return false;
-                }
+            if (startTime.isBefore(minTime) || startTime.isAfter(maxTime)) {
+                request.setAttribute("errorMessage", "Start time must be between 04:00 and 23:59!");
+                return false;
             }
             
-            ScheduleEvent event = new ScheduleEvent(title.trim(), description, startDateTime, endDateTime, user);
-            
-            // Xử lý recurring
-            if (frequencyStr != null && !"NONE".equals(frequencyStr)) {
-                FrequencyType frequency = FrequencyType.valueOf(frequencyStr);
-                String untilDateStr = request.getParameter("untilDate");
-                LocalDate untilDate = null;
-                if (untilDateStr != null && !untilDateStr.isEmpty()) {
-                    untilDate = LocalDate.parse(untilDateStr);
-                    if (untilDate.getYear() < 1900 || untilDate.getYear() > 2100) {
-                        return false;
-                    }
-                }
-                
-                RecurrenceRule rule = new RecurrenceRule(frequency, untilDate);
-                
-                // Xử lý byDays cho WEEKLY
-                if (frequency == FrequencyType.WEEKLY) {
-                    String[] byDaysArr = request.getParameterValues("byDays");
-                    if (byDaysArr != null) {
-                        List<DayOfWeek> byDays = Arrays.stream(byDaysArr)
-                                .map(DayOfWeek::valueOf)
-                                .collect(Collectors.toList());
-                        rule.setByDays(byDays);
-                    }
-                }
-                
-                event.setRecurrenceRule(rule);
+            if (endTime.isBefore(minTime) || endTime.isAfter(maxTime)) {
+                request.setAttribute("errorMessage", "End time must be between 04:00 and 23:59!");
+                return false;
             }
             
+            if (!endTime.isAfter(startTime)) {
+                request.setAttribute("errorMessage", "End time must be after start time!");
+                return false;
+            }
+            
+            // Tạo ScheduleEvent
+            ScheduleEvent event = new ScheduleEvent(
+                title.trim(), 
+                description, 
+                user,
+                startDate, 
+                endDate, 
+                recurrenceDays != null && !recurrenceDays.trim().isEmpty() ? recurrenceDays.trim() : null,
+                startTime, 
+                endTime
+            );
+            
+            // Insert sẽ tự động generate DayEvents
             ScheduleEventDB.insert(event);
             return true;
+            
         } catch (Exception e) {
             System.out.println("handleAddEvent error: " + e.getMessage());
+            e.printStackTrace();
+            request.setAttribute("errorMessage", "Invalid input data!");
             return false;
         }
     }
 
     /**
-     * Xử lý sửa event.
-     * Validate quyền sở hữu và không trùng giờ.
-     * 
-     * @return true nếu thành công, false nếu có lỗi
+     * Xử lý sửa ScheduleEvent.
      */
     private boolean handleEditEvent(HttpServletRequest request, User user) {
         String eventIdStr = request.getParameter("eventId");
@@ -296,10 +276,14 @@ public class ScheduleServlet extends HttpServlet {
         if (event == null || !event.getUser().getId().equals(user.getId())) return false;
         
         String title = request.getParameter("title");
-        String eventDateStr = request.getParameter("eventDate");
+        String startDateStr = request.getParameter("startDate");
+        String endDateStr = request.getParameter("endDate");
         String startTimeStr = request.getParameter("startTime");
         String endTimeStr = request.getParameter("endTime");
+        String recurrenceDays = request.getParameter("recurrenceDays");
         String description = request.getParameter("description");
+        
+        boolean needRegenerate = false;
         
         if (title != null && !title.trim().isEmpty()) {
             event.setTitle(title.trim());
@@ -307,43 +291,48 @@ public class ScheduleServlet extends HttpServlet {
         if (description != null) {
             event.setDescription(description);
         }
-        if (eventDateStr != null && startTimeStr != null && endTimeStr != null) {
-            LocalDate eventDate = LocalDate.parse(eventDateStr);
-            LocalTime startTime = LocalTime.parse(startTimeStr);
-            LocalTime endTime = LocalTime.parse(endTimeStr);
-            
-            // Validate thời gian
-            if (startTime.getHour() < 6 || startTime.getHour() > 23) {
-                request.setAttribute("errorMessage", "Start time must be between 06:00 and 23:00!");
-                return false;
+        
+        // Kiểm tra xem có thay đổi cấu trúc không
+        if (startDateStr != null && !startDateStr.isEmpty()) {
+            LocalDate newStartDate = LocalDate.parse(startDateStr);
+            if (!newStartDate.equals(event.getStartDate())) {
+                event.setStartDate(newStartDate);
+                needRegenerate = true;
             }
-            if (endTime.getHour() < 6 || (endTime.getHour() == 0 && endTime.getMinute() == 0)) {
-                request.setAttribute("errorMessage", "End time must be between 06:00 and 23:59!");
-                return false;
-            }
-            
-            LocalDateTime newStartDateTime = eventDate.atTime(startTime);
-            LocalDateTime newEndDateTime = eventDate.atTime(endTime);
-            
-            // Kiểm tra trùng giờ (không tính event đang edit)
-            if (event.getRecurrenceRule() == null) {
-                if (ScheduleEventDB.hasOverlappingEvent(user, newStartDateTime, newEndDateTime, eventId)) {
-                    request.setAttribute("errorMessage", "Time slot already occupied by another event!");
-                    return false;
-                }
-            }
-            
-            event.setStartTime(newStartDateTime);
-            event.setEndTime(newEndDateTime);
         }
         
-        ScheduleEventDB.update(event);
+        if (endDateStr != null && !endDateStr.isEmpty()) {
+            LocalDate newEndDate = LocalDate.parse(endDateStr);
+            if (!newEndDate.equals(event.getEndDate())) {
+                event.setEndDate(newEndDate);
+                needRegenerate = true;
+            }
+        }
+        
+        if (startTimeStr != null && !startTimeStr.isEmpty()) {
+            LocalTime newStartTime = LocalTime.parse(startTimeStr);
+            event.setDefaultStartTime(newStartTime);
+        }
+        
+        if (endTimeStr != null && !endTimeStr.isEmpty()) {
+            LocalTime newEndTime = LocalTime.parse(endTimeStr);
+            event.setDefaultEndTime(newEndTime);
+        }
+        
+        String currentRecurrence = event.getRecurrenceDays();
+        String newRecurrence = recurrenceDays != null && !recurrenceDays.trim().isEmpty() ? recurrenceDays.trim() : null;
+        if ((currentRecurrence == null && newRecurrence != null) ||
+            (currentRecurrence != null && !currentRecurrence.equals(newRecurrence))) {
+            event.setRecurrenceDays(newRecurrence);
+            needRegenerate = true;
+        }
+        
+        ScheduleEventDB.update(event, needRegenerate);
         return true;
     }
 
     /**
-     * Xử lý xóa event.
-     * Chỉ cho xóa event của chính user.
+     * Xử lý xóa ScheduleEvent.
      */
     private void handleDeleteEvent(HttpServletRequest request, User user) {
         String eventIdStr = request.getParameter("eventId");
@@ -358,120 +347,61 @@ public class ScheduleServlet extends HttpServlet {
     }
 
     /**
-     * Xử lý thêm ngoại lệ cho recurring event.
-     * Types: skip (bỏ qua ngày), add (thêm ngày), modify (đổi giờ).
+     * Xử lý hủy một buổi cụ thể (DayEvent).
      */
-    private void handleAddException(HttpServletRequest request, User user) {
-        String eventIdStr = request.getParameter("eventId");
-        String exceptionDateStr = request.getParameter("exceptionDate");
-        String exceptionType = request.getParameter("exceptionType");
+    private void handleCancelDay(HttpServletRequest request, User user) {
+        String dayEventIdStr = request.getParameter("dayEventId");
+        if (dayEventIdStr == null || dayEventIdStr.isEmpty()) return;
         
-        if (eventIdStr == null || exceptionDateStr == null) return;
+        Long dayEventId = Long.parseLong(dayEventIdStr);
+        DayEvent dayEvent = DayEventDB.findById(dayEventId);
         
-        Long eventId = Long.parseLong(eventIdStr);
-        LocalDate exceptionDate = LocalDate.parse(exceptionDateStr);
-        
-        ScheduleEvent event = ScheduleEventDB.findById(eventId);
-        if (event == null || !event.getUser().getId().equals(user.getId())) return;
-        
-        String description = request.getParameter("exceptionDescription");
-        
-        if ("skip".equals(exceptionType)) {
-            // Bỏ qua ngày này
-            ScheduleEventDB.addExcludedDate(eventId, exceptionDate);
-        } else if ("add".equals(exceptionType)) {
-            // Thêm ngày này với giờ gốc
-            LocalTime originalStartTime = event.getStartTime().toLocalTime();
-            LocalTime originalEndTime = event.getEndTime().toLocalTime();
-            ScheduleEventDB.createModifiedInstance(eventId, exceptionDate,
-                    exceptionDate.atTime(originalStartTime), exceptionDate.atTime(originalEndTime));
-        } else if ("modify".equals(exceptionType)) {
-            // Thay đổi thời gian cho ngày cụ thể
-            String newStartTimeStr = request.getParameter("newStartTime");
-            String newEndTimeStr = request.getParameter("newEndTime");
-            
-            if (newStartTimeStr != null && !newStartTimeStr.isEmpty() 
-                && newEndTimeStr != null && !newEndTimeStr.isEmpty()) {
-                LocalTime newStartTime = LocalTime.parse(newStartTimeStr);
-                LocalTime newEndTime = LocalTime.parse(newEndTimeStr);
-                
-                ScheduleEventDB.createModifiedInstance(eventId, exceptionDate,
-                        exceptionDate.atTime(newStartTime), exceptionDate.atTime(newEndTime));
-            }
+        // Kiểm tra quyền sở hữu
+        if (dayEvent != null && dayEvent.getScheduleEvent().getUser().getId().equals(user.getId())) {
+            DayEventDB.cancel(dayEventId);
         }
     }
 
     /**
-     * Expand recurring events thành các instances trong khoảng thời gian.
-     * Xử lý: frequency, byDays, excludedDates, untilDate.
-     * 
-     * @param recurringEvents Danh sách recurring events gốc
-     * @param startDate Ngày bắt đầu khoảng thời gian
-     * @param endDate Ngày kết thúc khoảng thời gian
-     * @return Danh sách virtual instances
+     * Xử lý khôi phục một buổi đã hủy.
      */
-    private List<ScheduleEvent> expandRecurringEvents(List<ScheduleEvent> recurringEvents, 
-            LocalDate startDate, LocalDate endDate) {
-        List<ScheduleEvent> expanded = new ArrayList<>();
+    private void handleRestoreDay(HttpServletRequest request, User user) {
+        String dayEventIdStr = request.getParameter("dayEventId");
+        if (dayEventIdStr == null || dayEventIdStr.isEmpty()) return;
         
-        for (ScheduleEvent event : recurringEvents) {
-            RecurrenceRule rule = event.getRecurrenceRule();
-            if (rule == null) continue;
-            
-            LocalDate eventStartDate = event.getStartTime().toLocalDate();
-            LocalTime eventStartTime = event.getStartTime().toLocalTime();
-            LocalTime eventEndTime = event.getEndTime().toLocalTime();
-            
-            LocalDate current = eventStartDate;
-            LocalDate until = rule.getUntilDate() != null ? rule.getUntilDate() : endDate;
-            
-            while (!current.isAfter(until) && !current.isAfter(endDate)) {
-                if (!current.isBefore(startDate) && !current.isBefore(eventStartDate)) {
-                    // Kiểm tra ngày có bị excluded không
-                    if (!rule.getExcludedDates().contains(current)) {
-                        // Kiểm tra byDays cho WEEKLY
-                        boolean shouldInclude = true;
-                        if (rule.getFrequency() == FrequencyType.WEEKLY && !rule.getByDays().isEmpty()) {
-                            shouldInclude = rule.getByDays().contains(current.getDayOfWeek());
-                        }
-                        
-                        if (shouldInclude) {
-                            // Tạo virtual instance
-                            ScheduleEvent instance = new ScheduleEvent(
-                                event.getTitle(),
-                                event.getDescription(),
-                                current.atTime(eventStartTime),
-                                current.atTime(eventEndTime),
-                                event.getUser()
-                            );
-                            instance.setId(event.getId());
-                            expanded.add(instance);
-                        }
-                    }
-                }
-                
-                // Tăng ngày theo frequency
-                switch (rule.getFrequency()) {
-                    case DAILY:
-                        current = current.plusDays(1);
-                        break;
-                    case WEEKLY:
-                        if (rule.getByDays().isEmpty()) {
-                            current = current.plusWeeks(1);
-                        } else {
-                            current = current.plusDays(1);
-                        }
-                        break;
-                    case MONTHLY:
-                        current = current.plusMonths(1);
-                        break;
-                    case YEARLY:
-                        current = current.plusYears(1);
-                        break;
-                }
-            }
+        Long dayEventId = Long.parseLong(dayEventIdStr);
+        DayEvent dayEvent = DayEventDB.findById(dayEventId);
+        
+        if (dayEvent != null && dayEvent.getScheduleEvent().getUser().getId().equals(user.getId())) {
+            DayEventDB.restore(dayEventId);
         }
+    }
+
+    /**
+     * Xử lý ghi đè giờ cho một buổi cụ thể.
+     */
+    private void handleOverrideTime(HttpServletRequest request, User user) {
+        String dayEventIdStr = request.getParameter("dayEventId");
+        String newStartTimeStr = request.getParameter("newStartTime");
+        String newEndTimeStr = request.getParameter("newEndTime");
         
-        return expanded;
+        if (dayEventIdStr == null || dayEventIdStr.isEmpty()) return;
+        
+        Long dayEventId = Long.parseLong(dayEventIdStr);
+        DayEvent dayEvent = DayEventDB.findById(dayEventId);
+        
+        if (dayEvent != null && dayEvent.getScheduleEvent().getUser().getId().equals(user.getId())) {
+            LocalTime newStartTime = null;
+            LocalTime newEndTime = null;
+            
+            if (newStartTimeStr != null && !newStartTimeStr.isEmpty()) {
+                newStartTime = LocalTime.parse(newStartTimeStr);
+            }
+            if (newEndTimeStr != null && !newEndTimeStr.isEmpty()) {
+                newEndTime = LocalTime.parse(newEndTimeStr);
+            }
+            
+            DayEventDB.overrideTime(dayEventId, newStartTime, newEndTime);
+        }
     }
 }

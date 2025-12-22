@@ -8,10 +8,9 @@
         <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
         
         <class>com.mycompany.model.User</class>
-        <class>com.mycompany.model.TodoItem</class>
         <class>com.mycompany.model.DeadlineTask</class>
         <class>com.mycompany.model.ScheduleEvent</class>
-        <class>com.mycompany.model.RecurrenceRule</class>
+        <class>com.mycompany.model.DayEvent</class>
         
         <exclude-unlisted-classes>false</exclude-unlisted-classes>
 
