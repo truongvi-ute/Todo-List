@@ -8,10 +8,6 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.*;
 import com.mycompany.model.User;
 
-/**
- * Servlet xử lý đăng nhập người dùng.
- * URL: /login
- */
 @WebServlet(urlPatterns = {"/login"})
 public class LoginServlet extends HttpServlet {
 
@@ -53,6 +49,12 @@ public class LoginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        // Lấy message từ session (nếu có) và xóa sau khi dùng
+        HttpSession session = request.getSession(false);
+        if (session != null && session.getAttribute("message") != null) {
+            request.setAttribute("message", session.getAttribute("message"));
+            session.removeAttribute("message");
+        }
         getServletContext().getRequestDispatcher("/signin.jsp").forward(request, response);
     }
 }

@@ -1,4 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="jakarta.tags.core"%>
+<%@taglib prefix="fn" uri="jakarta.tags.functions"%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,16 +16,10 @@
             <h2>Verify OTP</h2>
         </header>
 
-        <% 
-            String msg = (String) request.getAttribute("message");
-            if (msg != null) {
-                String alertClass = msg.toLowerCase().contains("success") || msg.toLowerCase().contains("sent") 
-                    ? "alert-success" : "alert-error";
-        %>
-            <div class="alert <%= alertClass %>">
-                <%= msg %>
-            </div>
-        <% } %>
+        <c:if test="${not empty message}">
+            <c:set var="alertClass" value="${fn:containsIgnoreCase(message, 'success') or fn:containsIgnoreCase(message, 'sent') ? 'alert-success' : 'alert-error'}"/>
+            <div class="alert ${alertClass}">${message}</div>
+        </c:if>
 
         <p class="otp-info">Enter the OTP code sent to your email</p>
 

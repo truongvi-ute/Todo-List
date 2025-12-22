@@ -125,13 +125,13 @@
                                     <div style="flex-grow: 1; width: 0;">
                                         <span class="task-title">${task.title}</span>
                                         <div class="task-meta">
-                                            <c:if test="${task.status != 'LATE'}">
+                                            <c:if test="${not isPast}">
                                                 <button type="button" class="btn-detail" 
                                                         onclick="showDetail('${task.id}', '${task.title}', '${task.description}', '${task.dueDate.toLocalDate()}', '${task.priority}')">
                                                     View
                                                 </button>
                                             </c:if>
-                                            <c:if test="${task.status == 'LATE'}">
+                                            <c:if test="${isPast}">
                                                 <span></span>
                                             </c:if>
                                             <span class="priority-badge">${task.priority}</span>

@@ -1,7 +1,6 @@
 package com.mycompany.controller;
 
 import com.mycompany.data.UserDB;
-import com.mycompany.model.User;
 import com.mycompany.service.PasswordUtil;
 import java.io.IOException;
 import jakarta.servlet.ServletException;
@@ -33,9 +32,13 @@ public class ResetPasswordServlet extends HttpServlet {
         String email = (String) session.getAttribute("pendingEmail");
         Boolean otpVerified = (Boolean) session.getAttribute("otpVerified");
         
-        // Kiểm tra đã verify OTP chưa
-        if (email == null || otpVerified == null || !otpVerified) {
+        // Kiểm tra session hợp lệ
+        if (email == null) {
             response.sendRedirect("login");
+            return;
+        }
+        if (otpVerified == null || !otpVerified) {
+            response.sendRedirect("verify-otp");
             return;
         }
         
@@ -49,22 +52,19 @@ public class ResetPasswordServlet extends HttpServlet {
         } else if (!newPassword.equals(confirmPassword)) {
             request.setAttribute("message", "Passwords do not match!");
         } else {
-            User user = UserDB.selectUser(email);
-            if (user != null) {
-                // Hash password mới và cập nhật
-                String hashedPassword = PasswordUtil.hash(newPassword);
-                UserDB.updatePassword(email, hashedPassword);
-                
-                // Xóa session tạm
-                session.removeAttribute("pendingEmail");
-                session.removeAttribute("otpType");
-                session.removeAttribute("otpVerified");
-                
-                url = "/signin.jsp";
-                request.setAttribute("message", "Password reset successful! Please sign in.");
-            } else {
-                request.setAttribute("message", "An error occurred. Please try again!");
-            }
+            // Hash password mới và cập nhật (email đã được verify qua OTP)
+            String hashedPassword = PasswordUtil.hash(newPassword);
+            UserDB.updatePassword(email, hashedPassword);
+            
+            // Xóa session tạm
+            session.removeAttribute("pendingEmail");
+            session.removeAttribute("otpType");
+            session.removeAttribute("otpVerified");
+            
+            // Redirect để URL hiển thị đúng
+            session.setAttribute("message", "Password reset successful! Please sign in.");
+            response.sendRedirect(request.getContextPath() + "/login");
+            return;
         }
         
         getServletContext().getRequestDispatcher(url).forward(request, response);
@@ -72,16 +72,21 @@ public class ResetPasswordServlet extends HttpServlet {
     
     /**
      * Xử lý GET request - Hiển thị form đặt password mới.
-     * Redirect về login nếu chưa verify OTP.
+     * Redirect về verify-otp nếu chưa verify, về login nếu không có pending email.
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession();
+        String email = (String) session.getAttribute("pendingEmail");
         Boolean otpVerified = (Boolean) session.getAttribute("otpVerified");
         
-        if (otpVerified == null || !otpVerified) {
+        if (email == null) {
             response.sendRedirect("login");
+            return;
+        }
+        if (otpVerified == null || !otpVerified) {
+            response.sendRedirect("verify-otp");
             return;
         }
         getServletContext().getRequestDispatcher("/reset-password.jsp").forward(request, response);

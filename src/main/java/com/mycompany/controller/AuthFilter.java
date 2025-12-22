@@ -10,6 +10,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Filter kiểm tra xác thực cho các trang JSP.
@@ -18,6 +20,8 @@ import java.io.IOException;
  */
 @WebFilter(urlPatterns = {"*.jsp"}) 
 public class AuthFilter implements Filter {
+
+    private static final String[] DAY_NAMES = {"", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
 
     /**
      * Kiểm tra xác thực trước khi cho phép truy cập trang JSP.
@@ -30,6 +34,12 @@ public class AuthFilter implements Filter {
 
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
+        
+        // Set current date for header
+        LocalDate today = LocalDate.now();
+        String dayName = DAY_NAMES[today.getDayOfWeek().getValue()];
+        String formattedDate = dayName + ", " + today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        httpRequest.setAttribute("currentDateFormatted", formattedDate);
         
         // Lấy đường dẫn user đang cố truy cập
         String requestURI = httpRequest.getRequestURI();

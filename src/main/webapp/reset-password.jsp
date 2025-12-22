@@ -1,4 +1,6 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="jakarta.tags.core"%>
+<%@taglib prefix="fn" uri="jakarta.tags.functions"%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -14,15 +16,10 @@
             <h2>Reset Password</h2>
         </header>
 
-        <% 
-            String msg = (String) request.getAttribute("message");
-            if (msg != null) {
-                String alertClass = msg.toLowerCase().contains("success") ? "alert-success" : "alert-error";
-        %>
-            <div class="alert <%= alertClass %>">
-                <%= msg %>
-            </div>
-        <% } %>
+        <c:if test="${not empty message}">
+            <c:set var="alertClass" value="${fn:containsIgnoreCase(message, 'success') ? 'alert-success' : 'alert-error'}"/>
+            <div class="alert ${alertClass}">${message}</div>
+        </c:if>
 
         <form action="reset-password" method="POST">
             <div class="form-group">

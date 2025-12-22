@@ -1,4 +1,5 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
+<%@taglib prefix="c" uri="jakarta.tags.core"%>
 <!DOCTYPE html>
 <html lang="en">
     <head>
@@ -7,7 +8,6 @@
         <title>TodoList</title>
         <link rel="icon" type="image/png" href="img/logo.png">
         <link rel="stylesheet" href="css/style.css">
-
     </head>
     <body>
         
@@ -16,14 +16,10 @@
                 <h2>Sign In</h2>
             </header>
 
-            <% 
-                String message = (String) request.getAttribute("message");
-                if (message != null) {
-            %>
-                <div class="alert alert-error">
-                    <%= message %>
-                </div>
-            <% } %>
+            <c:if test="${not empty message}">
+                <c:set var="alertClass" value="${message.contains('successful') ? 'alert-success' : 'alert-error'}"/>
+                <div class="alert ${alertClass}">${message}</div>
+            </c:if>
 
             <form action="login" method="POST">
                 <div class="form-group">

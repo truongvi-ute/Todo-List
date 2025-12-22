@@ -57,12 +57,15 @@ public class VerifyOtpServlet extends HttpServlet {
                 session.removeAttribute("pendingPassword");
                 session.removeAttribute("otpType");
                 
-                url = "/signin.jsp";
-                request.setAttribute("message", "Registration successful! Please sign in.");
+                // Redirect để URL hiển thị đúng
+                session.setAttribute("message", "Registration successful! Please sign in.");
+                response.sendRedirect(request.getContextPath() + "/login");
+                return;
             } else if ("reset".equals(otpType)) {
                 // Reset password: Đánh dấu đã verify, cho phép đặt password mới
                 session.setAttribute("otpVerified", true);
-                url = "/reset-password.jsp";
+                response.sendRedirect(request.getContextPath() + "/reset-password");
+                return;
             }
         } else {
             request.setAttribute("message", "Invalid or expired OTP code!");

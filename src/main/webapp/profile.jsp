@@ -1,12 +1,12 @@
 <%@page contentType="text/html" pageEncoding="UTF-8"%>
-<%@page import="com.mycompany.model.User"%>
-<%
-    User user = (User) session.getAttribute("loginedUser");
-    if (user == null) {
-        response.sendRedirect("login");
-        return;
-    }
-%>
+<%@taglib prefix="c" uri="jakarta.tags.core"%>
+<%@taglib prefix="fn" uri="jakarta.tags.functions"%>
+
+<c:if test="${empty sessionScope.loginedUser}">
+    <c:redirect url="login"/>
+</c:if>
+<c:set var="user" value="${sessionScope.loginedUser}"/>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,16 +18,13 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/css/profile.css">
 </head>
 <body>
-    <%@ include file="header.jsp" %>
+    <jsp:include page="header.jsp" />
     
     <main class="profile-container">
-        <% 
-            String msg = (String) request.getAttribute("message");
-            if (msg != null) {
-                String alertClass = msg.toLowerCase().contains("success") ? "alert-success" : "alert-error";
-        %>
-            <div class="alert <%= alertClass %>"><%= msg %></div>
-        <% } %>
+        <c:if test="${not empty message}">
+            <c:set var="alertClass" value="${fn:containsIgnoreCase(message, 'success') ? 'alert-success' : 'alert-error'}"/>
+            <div class="alert ${alertClass}">${message}</div>
+        </c:if>
         
         <div class="profile-grid">
             <!-- Left: Edit Profile -->
@@ -36,7 +33,7 @@
                 
                 <div class="profile-section">
                     <h3>Account Information</h3>
-                    <p class="email-display"><strong>Email:</strong> <%= user.getEmail() %></p>
+                    <p class="email-display"><strong>Email:</strong> ${user.email}</p>
                 </div>
                 
                 <div class="profile-section">
@@ -79,7 +76,7 @@
                         <div class="form-group checkbox-group">
                             <label class="checkbox-label">
                                 <input type="checkbox" name="notificationEnabled" 
-                                       <%= user.getNotificationEnabled() ? "checked" : "" %>>
+                                       ${user.notificationEnabled ? 'checked' : ''}>
                                 <span>Enable daily reminder email</span>
                             </label>
                         </div>
@@ -87,11 +84,11 @@
                         <div class="form-group">
                             <label for="notificationHour">Notification Time</label>
                             <select id="notificationHour" name="notificationHour">
-                                <% for (int h = 0; h < 24; h++) { %>
-                                    <option value="<%= h %>" <%= user.getNotificationHour() == h ? "selected" : "" %>>
-                                        <%= String.format("%02d:00", h) %>
+                                <c:forEach var="h" begin="0" end="23">
+                                    <option value="${h}" ${user.notificationHour == h ? 'selected' : ''}>
+                                        ${h < 10 ? '0' : ''}${h}:00
                                     </option>
-                                <% } %>
+                                </c:forEach>
                             </select>
                         </div>
                         
