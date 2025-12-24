@@ -3,7 +3,6 @@ package com.mycompany.controller;
 import com.mycompany.data.DayEventDB;
 import com.mycompany.data.ScheduleEventDB;
 import com.mycompany.model.DayEvent;
-import com.mycompany.model.DayEventStatus;
 import com.mycompany.model.ScheduleEvent;
 import com.mycompany.model.User;
 import jakarta.servlet.ServletException;
@@ -99,6 +98,7 @@ public class ScheduleServlet extends HttpServlet {
         request.setAttribute("currentMonth", viewDate.getMonthValue());
         request.setAttribute("currentYear", viewDate.getYear());
         
+        setCurrentDate(request);
         getServletContext().getRequestDispatcher("/schedule.jsp").forward(request, response);
     }
 
@@ -144,7 +144,9 @@ public class ScheduleServlet extends HttpServlet {
                 handleRestoreDay(request, user);
                 break;
             case "overrideTime":
-                handleOverrideTime(request, user);
+                if (!handleOverrideTime(request, user)) {
+                    errorMessage = (String) request.getAttribute("errorMessage");
+                }
                 break;
             default:
                 break;
@@ -208,8 +210,8 @@ public class ScheduleServlet extends HttpServlet {
             LocalTime endTime = LocalTime.parse(endTimeStr);
             
             // Validate ngày
-            if (!endDate.isAfter(startDate)) {
-                request.setAttribute("errorMessage", "End date must be after start date!");
+            if (endDate.isBefore(startDate)) {
+                request.setAttribute("errorMessage", "End date cannot be before start date!");
                 return false;
             }
             
@@ -219,22 +221,47 @@ public class ScheduleServlet extends HttpServlet {
                 return false;
             }
             
-            // Validate thời gian trong khoảng 04:00 - 23:59
-            LocalTime minTime = LocalTime.of(4, 0);
+            // Validate thời gian trong khoảng 06:00 - 23:59
+            LocalTime minTime = LocalTime.of(6, 0);
             LocalTime maxTime = LocalTime.of(23, 59);
             
             if (startTime.isBefore(minTime) || startTime.isAfter(maxTime)) {
-                request.setAttribute("errorMessage", "Start time must be between 04:00 and 23:59!");
+                request.setAttribute("errorMessage", "Start time must be between 06:00 and 23:59!");
                 return false;
             }
             
             if (endTime.isBefore(minTime) || endTime.isAfter(maxTime)) {
-                request.setAttribute("errorMessage", "End time must be between 04:00 and 23:59!");
+                request.setAttribute("errorMessage", "End time must be between 06:00 and 23:59!");
                 return false;
             }
             
             if (!endTime.isAfter(startTime)) {
                 request.setAttribute("errorMessage", "End time must be after start time!");
+                return false;
+            }
+            
+            // Nếu startDate == endDate (sự kiện 1 ngày), bỏ qua recurrenceDays
+            String finalRecurrenceDays = null;
+            if (!startDate.equals(endDate) && recurrenceDays != null && !recurrenceDays.trim().isEmpty()) {
+                finalRecurrenceDays = recurrenceDays.trim();
+            }
+            
+            // Kiểm tra trùng lịch trước khi thêm
+            List<LocalDate> conflictDates = checkOverlappingEvents(user, startDate, endDate, 
+                    startTime, endTime, finalRecurrenceDays, null);
+            
+            if (!conflictDates.isEmpty()) {
+                // Tạo thông báo lỗi với các ngày bị trùng
+                String conflictDatesStr = conflictDates.stream()
+                        .limit(5) // Chỉ hiển thị tối đa 5 ngày
+                        .map(d -> d.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")))
+                        .collect(Collectors.joining(", "));
+                
+                if (conflictDates.size() > 5) {
+                    conflictDatesStr += " and " + (conflictDates.size() - 5) + " more";
+                }
+                
+                request.setAttribute("errorMessage", "Time conflict with existing event on: " + conflictDatesStr);
                 return false;
             }
             
@@ -245,7 +272,7 @@ public class ScheduleServlet extends HttpServlet {
                 user,
                 startDate, 
                 endDate, 
-                recurrenceDays != null && !recurrenceDays.trim().isEmpty() ? recurrenceDays.trim() : null,
+                finalRecurrenceDays,
                 startTime, 
                 endTime
             );
@@ -379,13 +406,14 @@ public class ScheduleServlet extends HttpServlet {
 
     /**
      * Xử lý ghi đè giờ cho một buổi cụ thể.
+     * Kiểm tra trùng lịch trước khi thay đổi.
      */
-    private void handleOverrideTime(HttpServletRequest request, User user) {
+    private boolean handleOverrideTime(HttpServletRequest request, User user) {
         String dayEventIdStr = request.getParameter("dayEventId");
         String newStartTimeStr = request.getParameter("newStartTime");
         String newEndTimeStr = request.getParameter("newEndTime");
         
-        if (dayEventIdStr == null || dayEventIdStr.isEmpty()) return;
+        if (dayEventIdStr == null || dayEventIdStr.isEmpty()) return false;
         
         Long dayEventId = Long.parseLong(dayEventIdStr);
         DayEvent dayEvent = DayEventDB.findById(dayEventId);
@@ -401,7 +429,114 @@ public class ScheduleServlet extends HttpServlet {
                 newEndTime = LocalTime.parse(newEndTimeStr);
             }
             
-            DayEventDB.overrideTime(dayEventId, newStartTime, newEndTime);
+            // Nếu không có thời gian mới, dùng thời gian mặc định
+            if (newStartTime == null) {
+                newStartTime = dayEvent.getScheduleEvent().getDefaultStartTime();
+            }
+            if (newEndTime == null) {
+                newEndTime = dayEvent.getScheduleEvent().getDefaultEndTime();
+            }
+            
+            // Validate thời gian
+            if (!newEndTime.isAfter(newStartTime)) {
+                request.setAttribute("errorMessage", "End time must be after start time!");
+                return false;
+            }
+            
+            // Kiểm tra trùng lịch (loại trừ chính dayEvent này)
+            LocalDate eventDate = dayEvent.getSpecificDate();
+            if (ScheduleEventDB.hasOverlappingEvent(user, eventDate, newStartTime, newEndTime, dayEventId)) {
+                request.setAttribute("errorMessage", "Time conflict with existing event on " + 
+                        eventDate.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+                return false;
+            }
+            
+            DayEventDB.overrideTime(dayEventId, 
+                    newStartTimeStr != null && !newStartTimeStr.isEmpty() ? LocalTime.parse(newStartTimeStr) : null,
+                    newEndTimeStr != null && !newEndTimeStr.isEmpty() ? LocalTime.parse(newEndTimeStr) : null);
+            return true;
         }
+        return false;
+    }
+    
+    /**
+     * Set ngày hiện tại cho header.
+     */
+    private void setCurrentDate(HttpServletRequest request) {
+        String[] dayNames = {"", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+        java.time.LocalDate today = java.time.LocalDate.now();
+        String dayName = dayNames[today.getDayOfWeek().getValue()];
+        String formattedDate = dayName + ", " + today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        request.setAttribute("currentDateFormatted", formattedDate);
+    }
+    
+    /**
+     * Kiểm tra trùng lịch cho tất cả các ngày sẽ được tạo DayEvent.
+     * 
+     * @param user User sở hữu events
+     * @param startDate Ngày bắt đầu
+     * @param endDate Ngày kết thúc
+     * @param startTime Giờ bắt đầu
+     * @param endTime Giờ kết thúc
+     * @param recurrenceDays Các ngày lặp lại (MON,TUE,...)
+     * @param excludeEventId ID của ScheduleEvent cần loại trừ (khi edit)
+     * @return Danh sách các ngày bị trùng lịch
+     */
+    private List<LocalDate> checkOverlappingEvents(User user, LocalDate startDate, LocalDate endDate,
+            LocalTime startTime, LocalTime endTime, String recurrenceDays, Long excludeEventId) {
+        
+        List<LocalDate> conflictDates = new ArrayList<>();
+        
+        // Parse recurrenceDays thành list DayOfWeek
+        List<DayOfWeek> targetDays = parseRecurrenceDays(recurrenceDays);
+        
+        // Nếu không có recurrenceDays, chỉ kiểm tra startDate
+        if (targetDays.isEmpty()) {
+            if (ScheduleEventDB.hasOverlappingEvent(user, startDate, startTime, endTime, null)) {
+                conflictDates.add(startDate);
+            }
+            return conflictDates;
+        }
+        
+        // Duyệt từ startDate đến endDate, kiểm tra các ngày khớp
+        LocalDate current = startDate;
+        while (!current.isAfter(endDate)) {
+            if (targetDays.contains(current.getDayOfWeek())) {
+                if (ScheduleEventDB.hasOverlappingEvent(user, current, startTime, endTime, null)) {
+                    conflictDates.add(current);
+                }
+            }
+            current = current.plusDays(1);
+        }
+        
+        return conflictDates;
+    }
+    
+    /**
+     * Parse chuỗi recurrenceDays thành list DayOfWeek.
+     */
+    private List<DayOfWeek> parseRecurrenceDays(String recurrenceDays) {
+        if (recurrenceDays == null || recurrenceDays.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        List<DayOfWeek> result = new ArrayList<>();
+        
+        for (String day : recurrenceDays.split(",")) {
+            day = day.trim().toUpperCase();
+            if (day.isEmpty()) continue;
+            
+            switch (day) {
+                case "MON": result.add(DayOfWeek.MONDAY); break;
+                case "TUE": result.add(DayOfWeek.TUESDAY); break;
+                case "WED": result.add(DayOfWeek.WEDNESDAY); break;
+                case "THU": result.add(DayOfWeek.THURSDAY); break;
+                case "FRI": result.add(DayOfWeek.FRIDAY); break;
+                case "SAT": result.add(DayOfWeek.SATURDAY); break;
+                case "SUN": result.add(DayOfWeek.SUNDAY); break;
+            }
+        }
+        
+        return result;
     }
 }

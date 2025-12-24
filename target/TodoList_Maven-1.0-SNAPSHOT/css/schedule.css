@@ -191,17 +191,16 @@ body {
 .btn-submit {
     min-width: 80px;
     height: 40px;
-    background: var(--primary-color);
+    background: #3526bd;
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
     font-weight: bold;
-    transition: background 0.3s;
 }
 
 .btn-submit:hover {
-    background: #3a3f99;
+    background: #3526bd;
 }
 
 .btn-delete {

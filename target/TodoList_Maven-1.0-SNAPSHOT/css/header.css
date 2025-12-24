@@ -1,0 +1,50 @@
+/* Header Styles - Semi-transparent Navigation */
+.main-header {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    padding: 0 30px;
+    height: 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-left .current-date {
+    font-weight: 600;
+    color: #00b894;
+    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.header-right .nav-links {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    margin: 0;
+    padding: 0;
+}
+
+.header-right .nav-links a {
+    text-decoration: none;
+    color: #a8d4ff;
+    font-weight: 500;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+
+.header-right .nav-links a:hover {
+    color: #2575fc;
+}
+
+.header-right .nav-links a.active {
+    color: #1a56db;
+    font-weight: 600;
+}

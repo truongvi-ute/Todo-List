@@ -107,6 +107,7 @@ public class DashboardServlet extends HttpServlet {
         request.setAttribute("calendarDays", calendarDays);
         request.setAttribute("monthOffset", monthOffset);
         
+        setCurrentDate(request);
         getServletContext().getRequestDispatcher("/home.jsp").forward(request, response);
     }
 
@@ -173,5 +174,16 @@ public class DashboardServlet extends HttpServlet {
         }
         
         return days;
+    }
+    
+    /**
+     * Set ngày hiện tại cho header.
+     */
+    private void setCurrentDate(HttpServletRequest request) {
+        String[] dayNames = {"", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+        LocalDate today = LocalDate.now();
+        String dayName = dayNames[today.getDayOfWeek().getValue()];
+        String formattedDate = dayName + ", " + today.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        request.setAttribute("currentDateFormatted", formattedDate);
     }
 }

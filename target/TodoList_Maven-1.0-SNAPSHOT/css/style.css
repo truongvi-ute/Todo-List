@@ -86,19 +86,17 @@ body {
 .btn-submit {
     width: 100%;
     padding: 14px;
-    background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+    background: #3526bd;
     color: var(--white);
     border: none;
     border-radius: 8px;
     font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: opacity 0.3s ease, box-shadow 0.3s ease;
 }
 
 .btn-submit:hover {
-    opacity: 0.9;
-    box-shadow: 0 5px 15px rgba(106, 17, 203, 0.4);
+    background: #3526bd;
 }
 
 /* --- Thông báo lỗi/thành công --- */

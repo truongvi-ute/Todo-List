@@ -25,8 +25,13 @@
                     <input type="hidden" name="dayEventId" id="dayEventId" value="">
                     
                     <div class="form-group">
-                        <label>Selected Event</label>
-                        <input type="text" id="selectedDayEventTitle" class="form-input" readonly placeholder="Click an event on calendar">
+                        <label>Event Name</label>
+                        <input type="text" id="selectedEventName" class="form-input" readonly placeholder="Click an event on calendar">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Date</label>
+                        <input type="text" id="selectedEventDate" class="form-input" readonly placeholder="-">
                     </div>
                     
                     <div class="form-group">
@@ -79,12 +84,12 @@
                     <!-- Row 2: Start time, End time -->
                     <div class="form-row">
                         <div class="form-group flex-1">
-                            <label>Start Time (04:00 - 23:59)</label>
-                            <input type="time" name="startTime" id="startTime" class="form-input" min="04:00" max="23:59" required>
+                            <label>Start Time (06:00 - 23:59)</label>
+                            <input type="time" name="startTime" id="startTime" class="form-input" min="06:00" max="23:59" required>
                         </div>
                         <div class="form-group flex-1">
-                            <label>End Time (04:00 - 23:59)</label>
-                            <input type="time" name="endTime" id="endTime" class="form-input" min="04:00" max="23:59" required>
+                            <label>End Time (06:00 - 23:59)</label>
+                            <input type="time" name="endTime" id="endTime" class="form-input" min="06:00" max="23:59" required>
                         </div>
                     </div>
                     
@@ -216,9 +221,9 @@
             const startDate = new Date(document.getElementById('startDate').value);
             const endDate = new Date(document.getElementById('endDate').value);
             
-            if (endDate <= startDate) {
+            if (endDate < startDate) {
                 e.preventDefault();
-                alert('End date must be after start date!');
+                alert('End date cannot be before start date!');
                 return false;
             }
             
@@ -275,8 +280,8 @@
                 // Populate Day Event form (left panel)
                 selectedDayEventId = this.dataset.dayEventId;
                 document.getElementById('dayEventId').value = selectedDayEventId;
-                document.getElementById('selectedDayEventTitle').value = 
-                    this.dataset.title + ' (' + this.dataset.specificDate + ')';
+                document.getElementById('selectedEventName').value = this.dataset.title;
+                document.getElementById('selectedEventDate').value = this.dataset.specificDate;
                 document.getElementById('btnDayEventSubmit').disabled = false;
                 
                 // Set appropriate radio based on status

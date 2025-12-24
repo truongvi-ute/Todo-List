@@ -32,6 +32,10 @@ public class User {
     /** Giờ gửi email nhắc nhở (0-23), mặc định 6h sáng */
     @Column(name = "notification_hour")
     private Integer notificationHour = 6;
+    
+    /** Trạng thái bị chặn - Admin có thể chặn user không cho đăng nhập */
+    @Column(name = "is_blocked")
+    private Boolean isBlocked = false;
 
     /**
      * Danh sách deadline tasks của user.
@@ -116,5 +120,13 @@ public class User {
     
     public void setNotificationHour(Integer notificationHour) {
         this.notificationHour = notificationHour;
+    }
+    
+    public Boolean getIsBlocked() {
+        return isBlocked != null ? isBlocked : false;
+    }
+    
+    public void setIsBlocked(Boolean isBlocked) {
+        this.isBlocked = isBlocked;
     }
 }

@@ -1,5 +1,7 @@
 package com.mycompany.controller;
 
+import com.mycompany.model.Admin;
+import com.mycompany.model.User;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -53,16 +55,39 @@ public class AuthFilter implements Filter {
         boolean isLoginServlet = requestURI.endsWith("login");
         boolean isLogoutServlet = requestURI.endsWith("logout");
         boolean isCSS = requestURI.endsWith(".css");
+        boolean isAdminJsp = requestURI.endsWith("admin.jsp");
 
         // Kiểm tra trạng thái đăng nhập
         HttpSession session = httpRequest.getSession(false);
-        boolean isLoggedIn = (session != null && session.getAttribute("loginedUser") != null);
+        boolean isUserLoggedIn = (session != null && session.getAttribute("loginedUser") != null);
+        boolean isAdminLoggedIn = (session != null && session.getAttribute("loginedAdmin") != null);
+        
+        // Kiểm tra user có bị block không
+        if (isUserLoggedIn) {
+            User user = (User) session.getAttribute("loginedUser");
+            if (user.getIsBlocked()) {
+                session.invalidate();
+                httpResponse.sendRedirect(httpRequest.getContextPath() + "/login");
+                return;
+            }
+            
+            // Chặn user thường truy cập trang admin
+            if (isAdminJsp) {
+                httpResponse.sendRedirect(httpRequest.getContextPath() + "/dashboard");
+                return;
+            }
+        }
+        
+        // Admin chỉ được truy cập trang admin
+        if (isAdminLoggedIn && !isAdminJsp) {
+            httpResponse.sendRedirect(httpRequest.getContextPath() + "/admin");
+            return;
+        }
 
         // Logic chặn/cho phép
-        if (isLoggedIn || isLoginJsp || isSignupJsp || isForgotPasswordJsp || isVerifyOtpJsp || isResetPasswordJsp || isLoginServlet || isLogoutServlet || isCSS) {
-            chain.doFilter(request, response); // Cho phép truy cập
+        if (isUserLoggedIn || isAdminLoggedIn || isLoginJsp || isSignupJsp || isForgotPasswordJsp || isVerifyOtpJsp || isResetPasswordJsp || isLoginServlet || isLogoutServlet || isCSS) {
+            chain.doFilter(request, response);
         } else {
-            // Chưa đăng nhập -> Redirect về trang login
             httpResponse.sendRedirect(httpRequest.getContextPath() + "/login");
         }
     }

@@ -1,6 +1,8 @@
 package com.mycompany.controller;
 
+import com.mycompany.data.AdminDB;
 import com.mycompany.data.UserDB;
+import com.mycompany.model.Admin;
 import com.mycompany.service.PasswordUtil;
 import java.io.IOException;
 import jakarta.servlet.ServletException;
@@ -13,7 +15,7 @@ public class LoginServlet extends HttpServlet {
 
     /**
      * Xử lý POST request - Đăng nhập.
-     * Kiểm tra email và password, tạo session nếu thành công.
+     * Kiểm tra cả bảng Admin và User.
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
@@ -22,24 +24,37 @@ public class LoginServlet extends HttpServlet {
         String email = request.getParameter("email");
         String pass = request.getParameter("password");
         
-        // Tìm user trong database
-        User user = UserDB.selectUser(email);
-        
         String url = "/signin.jsp";
         
-        // Xác thực password bằng BCrypt
-        if (user != null && PasswordUtil.verify(pass, user.getPassword())) {
-            // Đăng nhập thành công -> Tạo Session
+        // Kiểm tra Admin trước
+        Admin admin = AdminDB.selectAdmin(email);
+        if (admin != null && PasswordUtil.verify(pass, admin.getPassword())) {
             HttpSession session = request.getSession();
-            session.setAttribute("loginedUser", user);
-            session.setMaxInactiveInterval(30 * 60); // 30 phút
-            url = "/dashboard"; 
-            response.sendRedirect(request.getContextPath() + url);
+            session.setAttribute("loginedAdmin", admin);
+            session.setMaxInactiveInterval(30 * 60);
+            response.sendRedirect(request.getContextPath() + "/admin");
             return;
-        } else {
-            request.setAttribute("message", "Invalid email or password!");
         }
         
+        // Kiểm tra User
+        User user = UserDB.selectUser(email);
+        if (user != null && PasswordUtil.verify(pass, user.getPassword())) {
+            // Kiểm tra user có bị chặn không
+            if (user.getIsBlocked()) {
+                request.setAttribute("message", "Your account has been blocked. Please contact admin.");
+                getServletContext().getRequestDispatcher(url).forward(request, response);
+                return;
+            }
+            
+            // Đăng nhập thành công
+            HttpSession session = request.getSession();
+            session.setAttribute("loginedUser", user);
+            session.setMaxInactiveInterval(30 * 60);
+            response.sendRedirect(request.getContextPath() + "/dashboard");
+            return;
+        }
+        
+        request.setAttribute("message", "Invalid email or password!");
         getServletContext().getRequestDispatcher(url).forward(request, response);
     }
     
@@ -49,7 +64,6 @@ public class LoginServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        // Lấy message từ session (nếu có) và xóa sau khi dùng
         HttpSession session = request.getSession(false);
         if (session != null && session.getAttribute("message") != null) {
             request.setAttribute("message", session.getAttribute("message"));

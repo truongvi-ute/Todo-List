@@ -3,6 +3,7 @@ G:\Webs\Todo-List\src\main\java\com\mycompany\todolist_maven\JakartaRestConfigur
 G:\Webs\Todo-List\src\main\java\com\mycompany\data\DayEventDB.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\model\Priority.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\service\EmailService.java
+G:\Webs\Todo-List\src\main\java\com\mycompany\controller\AdminServlet.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\model\DayEvent.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\controller\DeadlineServlet.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\controller\DailyReminderServlet.java
@@ -11,6 +12,7 @@ G:\Webs\Todo-List\src\main\java\com\mycompany\model\DeadlineTask.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\controller\ScheduleServlet.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\service\PasswordUtil.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\data\JPAUtil.java
+G:\Webs\Todo-List\src\main\java\com\mycompany\data\AdminDB.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\model\User.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\controller\DashboardServlet.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\controller\AuthFilter.java
@@ -23,6 +25,7 @@ G:\Webs\Todo-List\src\main\java\com\mycompany\data\DeadlineTaskDB.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\model\ScheduleEvent.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\todolist_maven\resources\JakartaEE10Resource.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\controller\ResetPasswordServlet.java
+G:\Webs\Todo-List\src\main\java\com\mycompany\model\Admin.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\data\ScheduleEventDB.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\model\DayInfo.java
 G:\Webs\Todo-List\src\main\java\com\mycompany\controller\VerifyOtpServlet.java

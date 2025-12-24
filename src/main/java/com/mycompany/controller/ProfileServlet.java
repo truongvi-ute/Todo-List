@@ -30,6 +30,7 @@ public class ProfileServlet extends HttpServlet {
             response.sendRedirect("login");
             return;
         }
+        setCurrentDate(request);
         request.getRequestDispatcher("/profile.jsp").forward(request, response);
     }
 
@@ -58,6 +59,7 @@ public class ProfileServlet extends HttpServlet {
             handleUpdateNotification(request, user, session);
         }
         
+        setCurrentDate(request);
         request.getRequestDispatcher("/profile.jsp").forward(request, response);
     }
     
@@ -100,5 +102,16 @@ public class ProfileServlet extends HttpServlet {
         session.setAttribute("loginedUser", user);
         
         request.setAttribute("message", "Notification settings saved successfully!");
+    }
+    
+    /**
+     * Set ngày hiện tại cho header.
+     */
+    private void setCurrentDate(HttpServletRequest request) {
+        String[] dayNames = {"", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+        java.time.LocalDate today = java.time.LocalDate.now();
+        String dayName = dayNames[today.getDayOfWeek().getValue()];
+        String formattedDate = dayName + ", " + today.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        request.setAttribute("currentDateFormatted", formattedDate);
     }
 }

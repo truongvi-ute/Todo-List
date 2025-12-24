@@ -154,26 +154,6 @@ public class DayEventDB {
     }
 
     /**
-     * Lấy tất cả DayEvents (bao gồm cả CANCELLED) của một ScheduleEvent.
-     * 
-     * @param scheduleEventId ID của ScheduleEvent cha
-     * @return Danh sách DayEvent
-     */
-    public static List<DayEvent> getByScheduleEventId(Long scheduleEventId) {
-        EntityManager em = JPAUtil.getEntityManager();
-        try {
-            String jpql = "SELECT d FROM DayEvent d " +
-                          "WHERE d.scheduleEvent.id = :eventId " +
-                          "ORDER BY d.specificDate ASC";
-            TypedQuery<DayEvent> query = em.createQuery(jpql, DayEvent.class);
-            query.setParameter("eventId", scheduleEventId);
-            return query.getResultList();
-        } finally {
-            em.close();
-        }
-    }
-
-    /**
      * Hủy một buổi cụ thể (set status = CANCELLED).
      * 
      * @param dayEventId ID của DayEvent cần hủy
@@ -246,50 +226,6 @@ public class DayEventDB {
                 em.getTransaction().rollback();
             }
             e.printStackTrace();
-        } finally {
-            em.close();
-        }
-    }
-
-    /**
-     * Đếm số buổi ACTIVE của một ScheduleEvent.
-     * 
-     * @param scheduleEventId ID của ScheduleEvent
-     * @return Số buổi active
-     */
-    public static long countActiveByScheduleEvent(Long scheduleEventId) {
-        EntityManager em = JPAUtil.getEntityManager();
-        try {
-            String jpql = "SELECT COUNT(d) FROM DayEvent d " +
-                          "WHERE d.scheduleEvent.id = :eventId " +
-                          "AND d.status = :status";
-            TypedQuery<Long> query = em.createQuery(jpql, Long.class);
-            query.setParameter("eventId", scheduleEventId);
-            query.setParameter("status", DayEventStatus.ACTIVE);
-            return query.getSingleResult();
-        } finally {
-            em.close();
-        }
-    }
-
-    /**
-     * Tìm DayEvent theo ScheduleEvent và ngày cụ thể.
-     * 
-     * @param scheduleEventId ID của ScheduleEvent
-     * @param date Ngày cần tìm
-     * @return DayEvent nếu tìm thấy, null nếu không
-     */
-    public static DayEvent findByScheduleEventAndDate(Long scheduleEventId, LocalDate date) {
-        EntityManager em = JPAUtil.getEntityManager();
-        try {
-            String jpql = "SELECT d FROM DayEvent d " +
-                          "WHERE d.scheduleEvent.id = :eventId " +
-                          "AND d.specificDate = :date";
-            TypedQuery<DayEvent> query = em.createQuery(jpql, DayEvent.class);
-            query.setParameter("eventId", scheduleEventId);
-            query.setParameter("date", date);
-            List<DayEvent> results = query.getResultList();
-            return results.isEmpty() ? null : results.get(0);
         } finally {
             em.close();
         }

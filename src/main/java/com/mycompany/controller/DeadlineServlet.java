@@ -131,6 +131,7 @@ public class DeadlineServlet extends HttpServlet {
         request.setAttribute("today", realToday);
         request.setAttribute("todayStr", realToday.toString());
         
+        setCurrentDate(request);
         getServletContext().getRequestDispatcher("/deadline.jsp").forward(request, response);
     }
 
@@ -299,5 +300,16 @@ public class DeadlineServlet extends HttpServlet {
         }
         
         return days;
+    }
+    
+    /**
+     * Set ngày hiện tại cho header.
+     */
+    private void setCurrentDate(HttpServletRequest request) {
+        String[] dayNames = {"", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"};
+        LocalDate today = LocalDate.now();
+        String dayName = dayNames[today.getDayOfWeek().getValue()];
+        String formattedDate = dayName + ", " + today.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        request.setAttribute("currentDateFormatted", formattedDate);
     }
 }

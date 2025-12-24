@@ -10,9 +10,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Data Access Object (DAO) cho entity ScheduleEvent.
@@ -148,26 +146,6 @@ public class ScheduleEventDB {
         EntityManager em = JPAUtil.getEntityManager();
         try {
             String jpql = "SELECT e FROM ScheduleEvent e WHERE e.user = :user ORDER BY e.title ASC";
-            TypedQuery<ScheduleEvent> query = em.createQuery(jpql, ScheduleEvent.class);
-            query.setParameter("user", user);
-            return query.getResultList();
-        } finally {
-            em.close();
-        }
-    }
-
-    /**
-     * Lấy ScheduleEvents có recurring (có recurrenceDays).
-     * 
-     * @param user User sở hữu events
-     * @return Danh sách recurring ScheduleEvents
-     */
-    public static List<ScheduleEvent> getRecurringEventsByUser(User user) {
-        EntityManager em = JPAUtil.getEntityManager();
-        try {
-            String jpql = "SELECT e FROM ScheduleEvent e WHERE e.user = :user " +
-                          "AND e.recurrenceDays IS NOT NULL AND e.recurrenceDays != '' " +
-                          "ORDER BY e.title ASC";
             TypedQuery<ScheduleEvent> query = em.createQuery(jpql, ScheduleEvent.class);
             query.setParameter("user", user);
             return query.getResultList();

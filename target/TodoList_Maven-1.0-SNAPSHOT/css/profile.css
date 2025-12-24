@@ -122,19 +122,17 @@
 .btn-primary {
     width: 100%;
     padding: 12px;
-    background: linear-gradient(135deg, #6a11cb, #2575fc);
+    background: #3526bd;
     color: white;
     border: none;
     border-radius: 6px;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: opacity 0.3s, box-shadow 0.3s;
 }
 
 .btn-primary:hover {
-    opacity: 0.9;
-    box-shadow: 0 4px 12px rgba(106, 17, 203, 0.4);
+    background: #3526bd;
 }
 
 .logout-section {
@@ -143,19 +141,22 @@
     margin-top: 10px;
 }
 
-.btn-logout {
-    display: inline-block;
-    padding: 12px 40px;
-    background-color: #ff7675;
-    color: white;
-    text-decoration: none;
+.logout-section .btn-logout {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+    text-decoration: none !important;
     border-radius: 6px;
-    font-weight: 600;
-    transition: background-color 0.3s;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    text-align: center;
 }
 
-.btn-logout:hover {
-    background-color: #d63031;
+.logout-section .btn-logout:hover {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
 }
 
 .alert {

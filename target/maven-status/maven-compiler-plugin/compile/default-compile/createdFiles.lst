@@ -5,10 +5,12 @@ com\mycompany\data\ScheduleEventDB.class
 com\mycompany\data\DeadlineTaskDB.class
 com\mycompany\model\Status.class
 com\mycompany\model\ScheduleEvent.class
+com\mycompany\model\Admin.class
 com\mycompany\model\User.class
 com\mycompany\todolist_maven\resources\JakartaEE10Resource.class
 com\mycompany\controller\DashboardServlet.class
 com\mycompany\controller\ScheduleServlet.class
+com\mycompany\controller\AdminServlet.class
 com\mycompany\service\OtpService.class
 com\mycompany\controller\ProfileServlet.class
 com\mycompany\data\UserDB.class
@@ -20,6 +22,7 @@ com\mycompany\controller\LoginServlet.class
 com\mycompany\model\DayInfo.class
 com\mycompany\service\OtpService$OtpData.class
 com\mycompany\controller\VerifyOtpServlet.class
+com\mycompany\data\AdminDB.class
 com\mycompany\model\Priority.class
 com\mycompany\controller\ForgotPasswordServlet.class
 com\mycompany\data\DeadlineTaskDB$1.class

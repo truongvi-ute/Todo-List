@@ -136,4 +136,61 @@ public class UserDB {
             em.close();
         }
     }
+    
+    /**
+     * Lấy tất cả Users.
+     * Dùng cho trang quản lý Admin.
+     * 
+     * @return Danh sách tất cả Users
+     */
+    public static java.util.List<User> getAllUsers() {
+        EntityManager em = JPAUtil.getEntityManager();
+        String qString = "SELECT u FROM User u ORDER BY u.id";
+        TypedQuery<User> q = em.createQuery(qString, User.class);
+        try {
+            return q.getResultList();
+        } finally {
+            em.close();
+        }
+    }
+    
+    /**
+     * Cập nhật trạng thái chặn của User.
+     * 
+     * @param userId ID của User
+     * @param blocked true = chặn, false = bỏ chặn
+     */
+    public static void updateBlockStatus(Long userId, boolean blocked) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            em.getTransaction().begin();
+            User user = em.find(User.class, userId);
+            if (user != null) {
+                user.setIsBlocked(blocked);
+            }
+            em.getTransaction().commit();
+        } catch (Exception e) {
+            if (em.getTransaction().isActive()) {
+                em.getTransaction().rollback();
+            }
+            e.printStackTrace();
+        } finally {
+            em.close();
+        }
+    }
+    
+    /**
+     * Tìm User theo ID.
+     * 
+     * @param id ID của User
+     * @return User nếu tìm thấy, null nếu không
+     */
+    public static User findById(Long id) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            return em.find(User.class, id);
+        } finally {
+            em.close();
+        }
+    }
 }
