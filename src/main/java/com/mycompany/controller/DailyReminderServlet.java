@@ -30,7 +30,7 @@ public class DailyReminderServlet extends HttpServlet {
     /**
      * Xử lý GET request - Gửi daily reminder.
      * Lấy users có notification_hour = giờ hiện tại và gửi email.
-     * Response: JSON với số lượng sent/failed.
+     * Response: JSON ngắn gọn để tránh "output too large".
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -38,35 +38,40 @@ public class DailyReminderServlet extends HttpServlet {
         
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
-        PrintWriter out = response.getWriter();
         
-        // Lấy giờ hiện tại theo timezone Vietnam
-        int currentHour = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).getHour();
-        
-        // Lấy users có bật notification cho giờ này
-        List<User> users = UserDB.getUsersWithNotificationAt(currentHour);
-        
-        int sentCount = 0;
-        int failCount = 0;
-        
-        for (User user : users) {
-            try {
-                String emailContent = buildDailyReminderEmail(user);
-                if (emailContent != null) {
-                    boolean sent = EmailService.sendDailyReminder(user.getEmail(), emailContent);
-                    if (sent) {
-                        sentCount++;
-                    } else {
-                        failCount++;
+        try {
+            // Lấy giờ hiện tại theo timezone Vietnam
+            int currentHour = LocalDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).getHour();
+            
+            // Lấy users có bật notification cho giờ này
+            List<User> users = UserDB.getUsersWithNotificationAt(currentHour);
+            
+            int sentCount = 0;
+            int failCount = 0;
+            
+            for (User user : users) {
+                try {
+                    String emailContent = buildDailyReminderEmail(user);
+                    if (emailContent != null) {
+                        boolean sent = EmailService.sendDailyReminder(user.getEmail(), emailContent);
+                        if (sent) {
+                            sentCount++;
+                        } else {
+                            failCount++;
+                        }
                     }
+                } catch (Exception e) {
+                    failCount++;
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-                failCount++;
             }
+            
+            // Response ngắn gọn
+            response.getWriter().print("{\"ok\":1,\"s\":" + sentCount + ",\"f\":" + failCount + "}");
+            
+        } catch (Exception e) {
+            response.setStatus(HttpServletResponse.SC_OK); // Vẫn trả 200 để cron không báo lỗi
+            response.getWriter().print("{\"ok\":0,\"err\":\"" + e.getClass().getSimpleName() + "\"}");
         }
-        
-        out.print("{\"success\": true, \"sent\": " + sentCount + ", \"failed\": " + failCount + ", \"hour\": " + currentHour + "}");
     }
     
     /**

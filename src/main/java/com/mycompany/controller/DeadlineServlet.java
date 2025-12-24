@@ -93,14 +93,8 @@ public class DeadlineServlet extends HttpServlet {
         LocalDateTime startDateTime = monday.atStartOfDay();
         LocalDateTime endDateTime = sunday.plusDays(1).atStartOfDay();
         
-        List<DeadlineTask> tasks;
-        if ("priority".equals(sort)) {
-            tasks = DeadlineTaskDB.getTasksByUserDateRangeSortByPriority(user, startDateTime, endDateTime);
-        } else if (!"all".equals(filter)) {
-            tasks = DeadlineTaskDB.getTasksByUserDateRangeAndStatus(user, startDateTime, endDateTime, filter);
-        } else {
-            tasks = DeadlineTaskDB.getTasksByUserAndDateRange(user, startDateTime, endDateTime);
-        }
+        // Sử dụng method kết hợp cả filter và sort
+        List<DeadlineTask> tasks = DeadlineTaskDB.getTasksWithFilterAndSort(user, startDateTime, endDateTime, filter, sort);
         
         // Cập nhật status LATE cho các task quá hạn
         LocalDate realToday = LocalDate.now();

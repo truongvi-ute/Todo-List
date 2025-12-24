@@ -227,4 +227,58 @@ public class DeadlineTaskDB {
             return getTasksByUserAndDateRange(user, startOfDay, endOfDay);
         }
     }
+    
+    /**
+     * Lấy tasks với cả filter và sort.
+     * 
+     * @param user User sở hữu tasks
+     * @param startDate Ngày bắt đầu
+     * @param endDate Ngày kết thúc
+     * @param filter Filter status: "all", "in_progress", "done", "late"
+     * @param sort Kiểu sắp xếp: "priority" hoặc "date"
+     * @return Danh sách DeadlineTask đã lọc và sắp xếp
+     */
+    public static List<DeadlineTask> getTasksWithFilterAndSort(User user, LocalDateTime startDate, 
+            LocalDateTime endDate, String filter, String sort) {
+        EntityManager em = JPAUtil.getEntityManager();
+        try {
+            String jpql = "SELECT t FROM DeadlineTask t WHERE t.user = :user " +
+                          "AND t.dueDate >= :startDate AND t.dueDate < :endDate ";
+            
+            // Add filter condition
+            if (!"all".equals(filter) && filter != null) {
+                jpql += "AND t.status = :status ";
+            }
+            
+            TypedQuery<DeadlineTask> query = em.createQuery(jpql, DeadlineTask.class);
+            query.setParameter("user", user);
+            query.setParameter("startDate", startDate);
+            query.setParameter("endDate", endDate);
+            
+            if (!"all".equals(filter) && filter != null) {
+                query.setParameter("status", com.mycompany.model.Status.valueOf(filter.toUpperCase()));
+            }
+            
+            List<DeadlineTask> tasks = query.getResultList();
+            
+            // Sort in Java
+            if ("priority".equals(sort)) {
+                tasks.sort((t1, t2) -> {
+                    int p1 = getPriorityOrder(t1.getPriority());
+                    int p2 = getPriorityOrder(t2.getPriority());
+                    if (p1 != p2) {
+                        return p1 - p2;
+                    }
+                    return t2.getCreatedAt().compareTo(t1.getCreatedAt());
+                });
+            } else {
+                // Sort by createdAt DESC
+                tasks.sort((t1, t2) -> t2.getCreatedAt().compareTo(t1.getCreatedAt()));
+            }
+            
+            return tasks;
+        } finally {
+            em.close();
+        }
+    }
 }
